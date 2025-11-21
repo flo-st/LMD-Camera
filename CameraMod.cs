@@ -66,6 +66,12 @@ namespace LMD_Camera
             if (mode.HasValue)
             {
                 if (mode.Value == ConfigManager.LastUsedViewMode) return false;
+                
+                if (CameraManager.IsRagdolling())
+                {
+                    Log("Camera switching disabled during ragdoll");
+                    return false;
+                }
 
                 ConfigManager.LastUsedViewMode = mode.Value;
                 CameraManager.SetViewMode(mode.Value);

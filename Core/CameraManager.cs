@@ -1,5 +1,6 @@
 using UnityEngine;
 using Il2CppMegagon.Downhill.Cameras;
+using Il2CppMegagon.Downhill.Vehicle.Controller;
 
 namespace LMD_Camera.Core
 {
@@ -8,6 +9,7 @@ namespace LMD_Camera.Core
         private static Camera? cam;
         private static Transform? camTransform, bike, headBone;
         private static PlayCamera? playCam;
+        private static BikeLocomotion? bikeLocomotion;
         private static GameObject? bikeMeshObject;
         private static readonly List<GameObject> hairObjects = new();
         private static ViewMode currentMode = ViewMode.None;
@@ -76,6 +78,11 @@ namespace LMD_Camera.Core
             }
         }
 
+        public static bool IsRagdolling()
+        {
+            return bikeLocomotion != null && bikeLocomotion.prop_Boolean_2;
+        }
+
         private static bool FindReferences()
         {
             var camObj = GameObject.Find("PlayCamera(Clone)");
@@ -89,6 +96,8 @@ namespace LMD_Camera.Core
             bike = bikeObj.transform;
 
             if (cam == null || playCam == null) return false;
+
+            bikeLocomotion = bikeObj.GetComponent<BikeLocomotion>();
 
             var meshObj = bike.Find("bike")?.Find("mergedMesh");
             if (meshObj != null)
