@@ -55,7 +55,7 @@ Created on first launch with default values.
 
 Configurable settings:
 
-- Camera positioning and pitch angle (first-person & third-person)
+- Camera positioning and pitch angle
 - FOV, near clip plane, and smoothing
 - Hotkey bindings
 - Real-time adjustment toggle
