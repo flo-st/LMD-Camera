@@ -2,7 +2,7 @@
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(LMD_Camera.CameraMod), "LMD-Camera", "1.0.0", "flo-st")]
+[assembly: MelonInfo(typeof(LMD_Camera.CameraMod), "LMD-Camera", "1.0.1", "flo-st")]
 [assembly: MelonGame("Megagon Industries", "Lonely Mountains: Downhill")]
 
 namespace LMD_Camera
