@@ -9,13 +9,13 @@ A camera mod for Lonely Mountains: Downhill that adds customizable first-person 
 - Third-Person Camera
 - Persistent Settings
 - Customizable Hotkeys
-- Real-Time Adjustments (\* see Configuration)
+- Real-Time Adjustments
 
 ## Installation
 
-1. Setup [MelonLoader](https://github.com/LavaGang/MelonLoader) for Lonely Mountains: Downhill
+1. Set up [MelonLoader](https://github.com/LavaGang/MelonLoader) for Lonely Mountains: Downhill
 2. Download the latest release from the Releases page
-3. Place the `.dll` file into your `Mods` folder
+3. Place the `.dll` file in your `Mods` folder
 4. Launch the game
 
 ## Usage
@@ -32,18 +32,18 @@ Camera mode is saved automatically and persists between sessions.
 
 ### Real-Time Adjustments
 
-> [!WARNING]
+> [!NOTE]
 >
-> Disabled by default. Set `AllowKeyAdjustments = true` in the config file to enable it.
+> Disabled by default. Set `AllowKeyAdjustments = true` in the config file to enable.
 
 When enabled, use the following keys while in First-Person or Third-Person mode:
 
-| Action                             | Key         |
-| ---------------------------------- | ----------- |
-| Adjust vertical position           | ↑/↓ Arrow   |
-| Adjust forward / backward position | ←/→ Arrow   |
-| Tilt camera down                   | Right Shift |
-| Tilt camera up                     | Right Ctrl  |
+| Action                           | Key           |
+| -------------------------------- | ------------- |
+| Adjust vertical position         | `↑/↓ Arrow`   |
+| Adjust forward/backward position | `←/→ Arrow`   |
+| Tilt camera down                 | `Right Shift` |
+| Tilt camera up                   | `Right Ctrl`  |
 
 Adjustments are saved automatically and persist between sessions.
 
@@ -51,10 +51,12 @@ Adjustments are saved automatically and persist between sessions.
 
 Config file location: `UserData/LMD-Camera.cfg`
 
-It is created on first launch with default values.
+Created on first launch with default values.
 
-- Camera positioning and pitch angle (first-person & third-person)
-- FOV, near clip plane and smoothing
+Configurable settings:
+
+- Camera positioning and pitch angle
+- FOV, near clip plane, and smoothing
 - Hotkey bindings
 - Real-time adjustment toggle
 

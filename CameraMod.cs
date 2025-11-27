@@ -2,7 +2,7 @@
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(LMD_Camera.CameraMod), "LMD-Camera", "1.0.0", "flo-st")]
+[assembly: MelonInfo(typeof(LMD_Camera.CameraMod), "LMD-Camera", "1.0.1", "flo-st")]
 [assembly: MelonGame("Megagon Industries", "Lonely Mountains: Downhill")]
 
 namespace LMD_Camera
@@ -10,8 +10,7 @@ namespace LMD_Camera
     public class CameraMod : MelonMod
     {
         private static CameraMod instance = null!;
-        private bool isInLevel = false;
-        private bool hasSeenMenu = false;
+        private static GameObject? playCamera;
         private float levelTimer = 0f;
         private const float INIT_DELAY = 1f;
 
@@ -25,58 +24,55 @@ namespace LMD_Camera
 
         public override void OnUpdate()
         {
-            if (!hasSeenMenu) return;
-            if (IsHotkeyPressed()) return;
-
-            if (isInLevel && levelTimer < INIT_DELAY)
+            if (!IsInLevel()) return;
+            
+            if (levelTimer < INIT_DELAY)
             {
                 levelTimer += Time.deltaTime;
                 if (levelTimer >= INIT_DELAY)
-                    CameraManager.SetViewMode(ConfigManager.LastUsedViewMode);
+                    CameraManager.Initialize();
             }
-        }
-
-        public override void OnLateUpdate()
-        {
-            if (isInLevel && hasSeenMenu) 
+            else
+            {
+                if (IsHotkeyPressed()) return;
                 CameraManager.UpdateCamera();
+            }
         }
 
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
-            if (sceneName.Contains("SplashScreen")) return;
-            
-            bool wasInLevel = isInLevel;
-            isInLevel = !string.IsNullOrEmpty(sceneName) && !sceneName.Contains("Menu");
+            if (playCamera == null)
+                playCamera = GameObject.Find("PlayCamera(Clone)");
 
-            if (!hasSeenMenu && sceneName.Contains("Menu"))
-            {
-                hasSeenMenu = true;
-                Log("Game ready");
-            }
-
-            if (isInLevel && !wasInLevel && hasSeenMenu)
-            {
+            if (IsInLevel())
                 levelTimer = 0f;
-                CameraManager.Initialize();
-            }
-            else if (!isInLevel && wasInLevel)
-            {
+            else
                 CameraManager.Cleanup();
-            }
         }
 
-        private bool IsHotkeyPressed()
-        {
-            if (!isInLevel) return false;
+        private static bool IsInLevel() => playCamera != null && playCamera.activeSelf;
 
+        private static bool IsHotkeyPressed()
+        {
             ViewMode? mode = null;
-            if (Input.GetKeyDown(ConfigManager.FirstPersonKey)) mode = ViewMode.FirstPerson;
-            else if (Input.GetKeyDown(ConfigManager.ThirdPersonKey)) mode = ViewMode.ThirdPerson;
-            else if (Input.GetKeyDown(ConfigManager.DefaultKey)) mode = ViewMode.Default;
+            
+            if (Input.GetKeyDown(ConfigManager.FirstPersonKey)) 
+                mode = ViewMode.FirstPerson;
+            else if (Input.GetKeyDown(ConfigManager.ThirdPersonKey)) 
+                mode = ViewMode.ThirdPerson;
+            else if (Input.GetKeyDown(ConfigManager.DefaultKey)) 
+                mode = ViewMode.Default;
 
             if (mode.HasValue)
             {
+                if (mode.Value == ConfigManager.LastUsedViewMode) return false;
+                
+                if (CameraManager.IsRagdolling())
+                {
+                    Log("Camera switching disabled during ragdoll");
+                    return false;
+                }
+
                 ConfigManager.LastUsedViewMode = mode.Value;
                 CameraManager.SetViewMode(mode.Value);
                 return true;

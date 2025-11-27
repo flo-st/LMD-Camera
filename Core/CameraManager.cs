@@ -1,5 +1,6 @@
 using UnityEngine;
 using Il2CppMegagon.Downhill.Cameras;
+using Il2CppMegagon.Downhill.Vehicle.Controller;
 
 namespace LMD_Camera.Core
 {
@@ -8,53 +9,63 @@ namespace LMD_Camera.Core
         private static Camera? cam;
         private static Transform? camTransform, bike, headBone;
         private static PlayCamera? playCam;
-        private static SkinnedMeshRenderer? bikeRenderer;
+        private static BikeLocomotion? bikeLocomotion;
+        private static GameObject? bikeMeshObject;
         private static readonly List<GameObject> hairObjects = new();
         private static ViewMode currentMode = ViewMode.None;
 
         public static void Initialize()
         {
             if (FindReferences())
+            {
                 CameraMod.Log("Camera initialized");
+                SetViewMode(ConfigManager.LastUsedViewMode);
+            }
         }
 
         public static void Cleanup()
         {
             if (playCam != null) playCam.enabled = true;
-            if (bikeRenderer != null) bikeRenderer.enabled = true;
+            
+            bikeMeshObject?.SetActive(true);
             ShowHairObjects();
 
             currentMode = ViewMode.None;
             camTransform = bike = headBone = null;
+            bikeMeshObject = null;
             cam = null;
             playCam = null;
-            bikeRenderer = null;
             hairObjects.Clear();
         }
 
         public static void SetViewMode(ViewMode mode)
         {
-            if (mode == currentMode || !EnsureReferences()) return;
+            if (mode == currentMode || cam == null || playCam == null) return;
 
             currentMode = mode;
             ViewSettings s = GetSettings(mode);
             
-            cam!.fieldOfView = s.FieldOfView;
+            cam.fieldOfView = s.FieldOfView;
             cam.nearClipPlane = s.NearClipPlane;
-            playCam!.enabled = (mode == ViewMode.Default);
+            playCam.enabled = (mode == ViewMode.Default);
 
-            if (mode == ViewMode.FirstPerson)
-                SetupFirstPersonView(s);
+            if (mode == ViewMode.FirstPerson && headBone != null)
+            {
+                bikeMeshObject?.SetActive(!s.HideBikeMesh);
+                if (s.HideBikeMesh) HideHairObjects();
+                else ShowHairObjects();
+            }
             else
-                ResetBikeVisibility();
+            {
+                bikeMeshObject?.SetActive(true);
+                ShowHairObjects();
+            }
 
             CameraMod.Log($"View: {mode}");
         }
 
         public static void UpdateCamera()
         {
-            if (!EnsureReferences()) return;
-
             if (currentMode == ViewMode.FirstPerson)
             {
                 HandleAdjustments(ConfigManager.FirstPerson, true);
@@ -67,8 +78,10 @@ namespace LMD_Camera.Core
             }
         }
 
-        private static bool EnsureReferences() => 
-            (cam != null && bike != null) || FindReferences();
+        public static bool IsRagdolling()
+        {
+            return bikeLocomotion != null && bikeLocomotion.prop_Boolean_2;
+        }
 
         private static bool FindReferences()
         {
@@ -82,51 +95,35 @@ namespace LMD_Camera.Core
             playCam = camObj.GetComponent<PlayCamera>();
             bike = bikeObj.transform;
 
-            return cam != null && playCam != null;
-        }
+            if (cam == null || playCam == null) return false;
 
-        private static void SetupFirstPersonView(ViewSettings s)
-        {
-            FindHeadBone();
-            if (headBone == null) return;
+            bikeLocomotion = bikeObj.GetComponent<BikeLocomotion>();
 
-            if (bikeRenderer != null) bikeRenderer.enabled = !s.HideBikeMesh;
-            
-            if (s.HideBikeMesh) HideHairObjects();
-            else ShowHairObjects();
-        }
-
-        private static void ResetBikeVisibility()
-        {
-            if (bikeRenderer != null) bikeRenderer.enabled = true;
-            ShowHairObjects();
-        }
-
-        private static void FindHeadBone()
-        {
-            if (bike == null || headBone != null) return;
-
-            var bikeChild = bike.Find("bike")?.Find("mergedMesh");
-            if (bikeChild == null) return;
-            
-            bikeRenderer = bikeChild.GetComponent<SkinnedMeshRenderer>();
-            if (bikeRenderer == null) return;
-
-            bikeRenderer.updateWhenOffscreen = true;
-            foreach (var bone in bikeRenderer.bones)
+            var meshObj = bike.Find("bike")?.Find("mergedMesh");
+            if (meshObj != null)
             {
-                if (bone.name == "head_tip_BindJNT")
+                bikeMeshObject = meshObj.gameObject;
+                var renderer = meshObj.GetComponent<SkinnedMeshRenderer>();
+                if (renderer != null)
                 {
-                    headBone = bone;
-                    return;
+                    renderer.updateWhenOffscreen = true;
+                    foreach (var bone in renderer.bones)
+                    {
+                        if (bone.name == "head_tip_BindJNT")
+                        {
+                            headBone = bone;
+                            break;
+                        }
+                    }
                 }
             }
+
+            return true;
         }
 
         private static void FindHairObjects()
         {
             if (hairObjects.Count > 0) return;
-            
             foreach (var obj in GameObject.FindObjectsOfType<GameObject>())
             {
                 if (obj.name.Contains("rider_hair") || obj.name.Contains("rider_facialhair"))
@@ -173,7 +170,7 @@ namespace LMD_Camera.Core
 
         private static void UpdateFirstPerson()
         {
-            if (headBone == null || camTransform == null || bike == null) return;
+            if (headBone == null || bike == null || camTransform == null) return;
 
             ViewSettings s = ConfigManager.FirstPerson;
             
