@@ -5,36 +5,26 @@
     <RootNamespace>LMD_Camera</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <NoWarn>CS8618</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GameDir Condition="'$(GameDir)' == '' And '$(LMD_GAME_DIR)' != ''">$(LMD_GAME_DIR)</GameDir>
+    <GameDir Condition="'$(GameDir)' == ''">..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill</GameDir>
+    <MelonDir Condition="'$(MelonDir)' == ''">$(GameDir)/MelonLoader</MelonDir>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill\MelonLoader\Il2CppAssemblies\Assembly-CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="Il2CppInterop.Runtime">
-      <HintPath>..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill\MelonLoader\net6\Il2CppInterop.Runtime.dll</HintPath>
-    </Reference>
-    <Reference Include="Il2Cppmscorlib">
-      <HintPath>..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill\MelonLoader\Il2CppAssemblies\Il2Cppmscorlib.dll</HintPath>
-    </Reference>
-    <Reference Include="MelonLoader">
-      <HintPath>..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill\MelonLoader\net6\MelonLoader.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine">
-      <HintPath>..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill\MelonLoader\Il2CppAssemblies\UnityEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill\MelonLoader\Il2CppAssemblies\UnityEngine.CoreModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill\MelonLoader\Il2CppAssemblies\UnityEngine.InputLegacyModule.dll</HintPath>
-    </Reference>
+    <Reference Include="Assembly-CSharp"><HintPath>$(MelonDir)/Il2CppAssemblies/Assembly-CSharp.dll</HintPath></Reference>
+    <Reference Include="Il2Cppmscorlib"><HintPath>$(MelonDir)/Il2CppAssemblies/Il2Cppmscorlib.dll</HintPath></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(MelonDir)/Il2CppAssemblies/UnityEngine.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(MelonDir)/Il2CppAssemblies/UnityEngine.CoreModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.InputLegacyModule"><HintPath>$(MelonDir)/Il2CppAssemblies/UnityEngine.InputLegacyModule.dll</HintPath></Reference>
+    <Reference Include="MelonLoader"><HintPath>$(MelonDir)/net6/MelonLoader.dll</HintPath></Reference>
+    <Reference Include="Il2CppInterop.Runtime"><HintPath>$(MelonDir)/net6/Il2CppInterop.Runtime.dll</HintPath></Reference>
   </ItemGroup>
   
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <MakeDir Directories="$(SolutionDir)bin\Release\Mods" Condition="'$(Configuration)' == 'Debug'" />
-    <Exec Command="copy /Y &quot;$(OutputPath)LMD-Camera.dll&quot; &quot;$(SolutionDir)bin\Release\Mods&quot;" Condition="'$(Configuration)' == 'Debug'" />
+  <Target Name="DeployMod" AfterTargets="Build" Condition="Exists('$(GameDir)/Mods')">
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(GameDir)/Mods" />
   </Target>
 
 </Project>
