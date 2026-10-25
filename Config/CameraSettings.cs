@@ -35,7 +35,7 @@ internal class CameraSettings
             fieldOfView: 95f, nearClipPlane: 0.22f, forward: 0f, height: -0.2f, pitch: 25f, smoothing: 10f);
 
         ThirdPerson = new CameraViewSettings(_category, "TP", "PositionSmoothing",
-            fieldOfView: 70f, nearClipPlane: 0.3f, forward: -4f, height: 4f, pitch: 10f, smoothing: 12f);
+            fieldOfView: 70f, nearClipPlane: 0.3f, forward: -4f, height: 4f, pitch: 10f, smoothing: 7f);
 
         SavePreferences();
     }
