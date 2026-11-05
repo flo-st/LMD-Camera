@@ -12,8 +12,15 @@ internal class CameraViewApplier
     private const float MinLookDistanceSquared = 1e-6f;
 
     private readonly CameraSettings _cameraSettings;
+    private readonly (KeyCode Key, Adjustment Change)[] _firstPersonAdjustments;
+    private readonly (KeyCode Key, Adjustment Change)[] _thirdPersonAdjustments;
 
-    public CameraViewApplier(CameraSettings cameraSettings) => _cameraSettings = cameraSettings;
+    public CameraViewApplier(CameraSettings cameraSettings)
+    {
+        _cameraSettings = cameraSettings;
+        _firstPersonAdjustments = cameraSettings.AdjustmentKeys.Bindings(FirstPersonStep, PitchStep);
+        _thirdPersonAdjustments = cameraSettings.AdjustmentKeys.Bindings(ThirdPersonStep, PitchStep);
+    }
 
     public void ApplyViewSettings(ViewMode mode, RiderRig rig)
     {
@@ -29,11 +36,12 @@ internal class CameraViewApplier
         switch (view)
         {
             case ViewMode.FirstPerson:
-                ApplyKeyAdjustments(_cameraSettings.FirstPerson, FirstPersonStep);
+                ApplyKeyAdjustments(_cameraSettings.FirstPerson, _firstPersonAdjustments);
                 PositionFirstPersonCamera(rig, _cameraSettings.FirstPerson);
                 break;
+
             case ViewMode.ThirdPerson:
-                ApplyKeyAdjustments(_cameraSettings.ThirdPerson, ThirdPersonStep);
+                ApplyKeyAdjustments(_cameraSettings.ThirdPerson, _thirdPersonAdjustments);
                 PositionThirdPersonCamera(rig, _cameraSettings.ThirdPerson);
                 break;
         }
@@ -71,18 +79,22 @@ internal class CameraViewApplier
     private static float CalcFollowFactor(float smoothing) =>
         smoothing > 0f ? 1f - Mathf.Exp(-smoothing * Time.deltaTime) : 1f;
 
-    private void ApplyKeyAdjustments(CameraViewSettings cameraViewSettings, float positionStep)
+    private void ApplyKeyAdjustments(CameraViewSettings cameraViewSettings, (KeyCode Key, Adjustment Change)[] bindings)
     {
         if (!_cameraSettings.AllowAdjustments) return;
 
-        var adjustments = _cameraSettings.AdjustmentKeys.Bindings(positionStep, PitchStep)
-            .Where(binding => Input.GetKeyDown(binding.Key))
-            .Select(binding => binding.Change)
-            .ToList();
+        var changed = false;
 
-        if (adjustments.Count == 0) return;
+        foreach (var (Key, Change) in bindings)
+        {
+            if (!Input.GetKeyDown(Key)) continue;
 
-        adjustments.ForEach(cameraViewSettings.Adjust);
+            cameraViewSettings.Adjust(Change);
+            changed = true;
+        }
+
+        if (!changed) return;
+
         _cameraSettings.SavePreferences();
     }
 }
