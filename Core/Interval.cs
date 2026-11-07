@@ -1,8 +1,8 @@
-﻿using UnityEngine;
+using UnityEngine;
 
-namespace LMD_Camera.Core;
+namespace LmdCamera.Core;
 
-internal class Interval
+internal sealed class Interval
 {
     private readonly float _seconds;
     private float _nextTime;
@@ -11,9 +11,10 @@ internal class Interval
 
     public bool HasElapsed()
     {
-        if (Time.unscaledTime < _nextTime) return false;
+        var now = Time.unscaledTime;
+        if (now < _nextTime) return false;
 
-        _nextTime = Time.unscaledTime + _seconds;
+        _nextTime = now + _seconds;
         return true;
     }
 }

@@ -14,6 +14,11 @@ A camera mod for Lonely Mountains: Downhill that adds customizable first-person 
 ## Installation
 
 1. Set up [MelonLoader](https://github.com/LavaGang/MelonLoader) for Lonely Mountains: Downhill
+
+> [!Note]
+>
+> If the installer fails, download the latest `MelonLoader.x64.zip` from the [MelonLoader releases](https://github.com/LavaGang/MelonLoader/releases) and extract it directly into the game directory.
+
 2. Download the latest release from the Releases page
 3. Place the `.dll` file in your `Mods` folder
 4. Launch the game
@@ -59,6 +64,16 @@ Configurable settings:
 - FOV, near clip plane, and smoothing
 - Hotkey bindings
 - Real-time adjustment toggle
+
+## Building
+
+Requires the .NET SDK and a MelonLoader install that has been launched once, so the Il2Cpp assemblies exist.
+
+```sh
+dotnet build
+```
+
+The game is expected at `..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill`. Override it with the `LMD_GAME_DIR` environment variable or `-p:GameDir=<path>`. The built DLL is copied into the game's `Mods` folder.
 
 ---
 

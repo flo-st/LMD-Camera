@@ -1,4 +1,4 @@
-namespace LMD_Camera.Config;
+namespace LmdCamera.Config;
 
 internal enum ViewMode
 {

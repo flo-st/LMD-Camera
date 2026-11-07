@@ -1,9 +1,9 @@
-﻿using MelonLoader;
+using MelonLoader;
 using UnityEngine;
 
-namespace LMD_Camera.Config;
+namespace LmdCamera.Config;
 
-internal class CameraSettings
+internal sealed class CameraSettings
 {
     private readonly MelonPreferences_Category _category = MelonPreferences.CreateCategory("LMD-Camera");
     private readonly MelonPreferences_Entry<ViewMode> _lastView;
@@ -13,23 +13,23 @@ internal class CameraSettings
         _category.SetFilePath("UserData/LMD-Camera.cfg");
 
         _lastView = _category.CreateEntry("LastViewMode", ViewMode.Default);
-        AllowAdjustments = ReadPreference("AllowKeyAdjustments", false);
-        HideBike = ReadPreference("FP_HideBike", false);
+        AllowAdjustments = Read("AllowKeyAdjustments", false);
+        HideBike = Read("FP_HideBike", false);
 
         ViewKeys = new ViewKeys(
-            FirstPerson: ReadPreference("Key_FirstPerson", KeyCode.Alpha1),
-            Default: ReadPreference("Key_Default", KeyCode.Alpha2),
-            ThirdPerson: ReadPreference("Key_ThirdPerson", KeyCode.Alpha3));
+            FirstPerson: Read("Key_FirstPerson", KeyCode.Alpha1),
+            Default: Read("Key_Default", KeyCode.Alpha2),
+            ThirdPerson: Read("Key_ThirdPerson", KeyCode.Alpha3));
 
         AdjustmentKeys = new AdjustmentKeys(
-            Up: ReadPreference("Key_AdjustUp", KeyCode.UpArrow),
-            Down: ReadPreference("Key_AdjustDown", KeyCode.DownArrow),
-            Left: ReadPreference("Key_AdjustLeft", KeyCode.LeftArrow),
-            Right: ReadPreference("Key_AdjustRight", KeyCode.RightArrow),
-            PitchUp: ReadPreference("Key_AdjustPitchUp", KeyCode.RightControl),
-            PitchDown: ReadPreference("Key_AdjustPitchDown", KeyCode.RightShift));
+            Up: Read("Key_AdjustUp", KeyCode.UpArrow),
+            Down: Read("Key_AdjustDown", KeyCode.DownArrow),
+            Left: Read("Key_AdjustLeft", KeyCode.LeftArrow),
+            Right: Read("Key_AdjustRight", KeyCode.RightArrow),
+            PitchUp: Read("Key_AdjustPitchUp", KeyCode.RightControl),
+            PitchDown: Read("Key_AdjustPitchDown", KeyCode.RightShift));
 
-        DefaultLens = new Lens(ReadPreference("Default_FOV", 38f), ReadPreference("Default_NearClip", 0.3f));
+        DefaultLens = new Lens(Read("Default_FOV", 38f), Read("Default_NearClip", 0.3f));
 
         FirstPerson = new CameraViewSettings(_category, "FP", "RotationSmoothing",
             fieldOfView: 95f, nearClipPlane: 0.22f, forward: 0f, height: -0.2f, pitch: 25f, smoothing: 10f);
@@ -37,7 +37,7 @@ internal class CameraSettings
         ThirdPerson = new CameraViewSettings(_category, "TP", "PositionSmoothing",
             fieldOfView: 70f, nearClipPlane: 0.3f, forward: -4f, height: 4f, pitch: 10f, smoothing: 7f);
 
-        SavePreferences();
+        Save();
     }
 
     public bool AllowAdjustments { get; }
@@ -54,18 +54,18 @@ internal class CameraSettings
         set
         {
             _lastView.Value = value;
-            SavePreferences();
+            Save();
         }
     }
 
-    public Lens GetLensForView(ViewMode mode) => mode switch
+    public Lens GetLens(ViewMode view) => view switch
     {
         ViewMode.FirstPerson => FirstPerson.Lens,
         ViewMode.ThirdPerson => ThirdPerson.Lens,
         _ => DefaultLens,
     };
 
-    public void SavePreferences() => _category.SaveToFile(false);
+    public void Save() => _category.SaveToFile(false);
 
-    private T ReadPreference<T>(string name, T defaultValue) => _category.CreateEntry(name, defaultValue).Value;
+    private T Read<T>(string name, T defaultValue) => _category.CreateEntry(name, defaultValue).Value;
 }

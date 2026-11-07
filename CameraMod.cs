@@ -1,21 +1,21 @@
-﻿using LMD_Camera;
-using LMD_Camera.Config;
-using LMD_Camera.Core;
+using LmdCamera;
+using LmdCamera.Config;
+using LmdCamera.Core;
 using MelonLoader;
 
 [assembly: MelonInfo(typeof(CameraMod), "LMD-Camera", "1.1.0", "flo-st")]
 [assembly: MelonGame("Megagon Industries", "Lonely Mountains: Downhill")]
 
-namespace LMD_Camera;
+namespace LmdCamera;
 
 public class CameraMod : MelonMod
 {
-    private CameraInputHandler? _cameraInputHandler;
+    private CameraController? _controller;
 
     public override void OnInitializeMelon() =>
-        _cameraInputHandler = new CameraInputHandler(new CameraSettings(), LoggerInstance);
+        _controller = new CameraController(new CameraSettings(), LoggerInstance);
 
-    public override void OnUpdate() => _cameraInputHandler?.Update();
+    public override void OnUpdate() => _controller?.Update();
 
-    public override void OnLateUpdate() => _cameraInputHandler?.LateUpdate();
+    public override void OnLateUpdate() => _controller?.LateUpdate();
 }

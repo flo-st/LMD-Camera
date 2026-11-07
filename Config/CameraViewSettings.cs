@@ -1,11 +1,12 @@
 using MelonLoader;
 
-namespace LMD_Camera.Config;
+namespace LmdCamera.Config;
 
-internal record Lens(float FieldOfView, float NearClipPlane);
-internal record Adjustment(float Forward = 0f, float Height = 0f, float Pitch = 0f);
+internal readonly record struct Lens(float FieldOfView, float NearClipPlane);
 
-internal class CameraViewSettings
+internal readonly record struct Adjustment(float Forward = 0f, float Height = 0f, float Pitch = 0f);
+
+internal sealed class CameraViewSettings
 {
     private readonly MelonPreferences_Entry<float> _forward;
     private readonly MelonPreferences_Entry<float> _height;
@@ -14,7 +15,7 @@ internal class CameraViewSettings
     public CameraViewSettings(
         MelonPreferences_Category category,
         string prefix,
-        string smoothingName,
+        string smoothingKey,
         float fieldOfView,
         float nearClipPlane,
         float forward,
@@ -24,10 +25,9 @@ internal class CameraViewSettings
     {
         Lens = new Lens(
             category.CreateEntry($"{prefix}_FOV", fieldOfView).Value,
-            category.CreateEntry($"{prefix}_NearClip", nearClipPlane).Value
-        );
+            category.CreateEntry($"{prefix}_NearClip", nearClipPlane).Value);
 
-        Smoothing = category.CreateEntry($"{prefix}_{smoothingName}", smoothing).Value;
+        Smoothing = category.CreateEntry($"{prefix}_{smoothingKey}", smoothing).Value;
 
         _forward = category.CreateEntry($"{prefix}_Forward", forward);
         _height = category.CreateEntry($"{prefix}_Height", height);
