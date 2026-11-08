@@ -15,8 +15,8 @@ internal sealed class CameraPositioner
     public CameraPositioner(CameraSettings settings)
     {
         _settings = settings;
-        _firstPerson = new FirstPersonFollower(settings.FirstPerson, settings.FirstPersonMotion);
-        _thirdPerson = new ThirdPersonFollower(settings.ThirdPerson, settings.ThirdPersonMotion);
+        _firstPerson = new FirstPersonFollower(settings);
+        _thirdPerson = new ThirdPersonFollower(settings);
     }
 
     public void Apply(ViewMode view, RiderRig rig)

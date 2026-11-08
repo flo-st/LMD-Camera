@@ -10,6 +10,8 @@ A camera mod for Lonely Mountains: Downhill that adds customizable first-person 
 - Persistent Settings
 - Customizable Hotkeys
 - Real-Time Adjustments
+- Hide Rider in First Person
+- Immersive Ragdoll Mode
 
 ## Installation
 
@@ -19,8 +21,8 @@ A camera mod for Lonely Mountains: Downhill that adds customizable first-person 
 >
 > If the installer fails, download the latest `MelonLoader.x64.zip` from the [MelonLoader releases](https://github.com/LavaGang/MelonLoader/releases) and extract it directly into the game directory.
 
-2. Download the latest release from the Releases page
-3. Place the `.dll` file in your `Mods` folder
+2. Download the latest release from the [Releases page](https://github.com/flo-st/LMD-Camera/releases)
+3. Place the `.dll` file in the `Mods` folder inside the game folder
 4. Launch the game
 
 ## Usage
@@ -54,9 +56,9 @@ Adjustments are saved automatically and persist between sessions.
 
 ## Configuration
 
-Config file location: `UserData/LMD-Camera.cfg`
+Config file location: `UserData/LMD-Camera.cfg` inside the game folder
 
-Created on first launch with default values.
+Created on first launch with default values. Changes apply after restarting the game.
 
 Configurable settings:
 
@@ -64,16 +66,20 @@ Configurable settings:
 - FOV, near clip plane, and smoothing
 - Hotkey bindings
 - Real-time adjustment toggle
+- Rider hiding and immersive mode toggles
 
 ## Building
 
-Requires the .NET SDK and a MelonLoader install that has been launched once, so the Il2Cpp assemblies exist.
+1. Install the [.NET SDK](https://dotnet.microsoft.com/download) (6.0 or newer)
+2. Set up MelonLoader for the game and launch it once, so it generates the game assemblies
+3. Run `dotnet build` in the project folder
 
-```sh
-dotnet build
-```
+The built `.dll` is copied into the game's `Mods` folder automatically.
 
-The game is expected at `..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill`. Override it with the `LMD_GAME_DIR` environment variable or `-p:GameDir=<path>`. The built DLL is copied into the game's `Mods` folder.
+> [!NOTE]
+>
+> Expected game location: `..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill`\
+> Installed elsewhere? Change `GameDir` in `LMD-Camera.csproj` to your game folder.
 
 ---
 

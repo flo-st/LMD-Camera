@@ -14,10 +14,10 @@ internal sealed class ThirdPersonFollower : ICameraFollower
     private Vector3 _heading = Vector3.forward;
     private float _focusHeight;
 
-    public ThirdPersonFollower(CameraViewSettings view, ThirdPersonMotion motion)
+    public ThirdPersonFollower(CameraSettings settings)
     {
-        _view = view;
-        _motion = motion;
+        _view = settings.ThirdPerson;
+        _motion = settings.ThirdPersonMotion;
     }
 
     public void Reset(RiderRig rig)
