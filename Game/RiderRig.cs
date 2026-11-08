@@ -11,11 +11,9 @@ internal sealed class RiderRig
     private const string RiderMeshPath = "bike/mergedMesh";
     private const string HeadBoneName = "head_tip_BindJNT";
 
-    private static readonly string[] HairNames = { "rider_hair", "rider_facialhair" };
-
     private readonly GameObject _cameraObject;
     private readonly BikeLocomotion _locomotion;
-    private readonly GameObject[] _riderParts;
+    private Renderer[] _riderRenderers;
     private readonly float _foundAt = Time.unscaledTime;
 
     private RiderRig(
@@ -35,7 +33,7 @@ internal sealed class RiderRig
         _locomotion = locomotion;
 
         riderMesh.updateWhenOffscreen = true;
-        _riderParts = FindHair(bike).Append(riderMesh.gameObject).ToArray();
+        _riderRenderers = FindRiderRenderers(bike);
     }
 
     public Camera Camera { get; }
@@ -52,7 +50,7 @@ internal sealed class RiderRig
     {
         var cameraObject = GameObject.Find(PlayCameraName);
         var bike = GameObject.Find(BikeName);
-        if (cameraObject is null || bike is null) return null;
+        if (cameraObject == null || bike == null) return null;
 
         var camera = cameraObject.GetComponent<Camera>();
         var playCamera = cameraObject.GetComponent<PlayCamera>();
@@ -60,19 +58,22 @@ internal sealed class RiderRig
         var riderMesh = bike.transform.Find(RiderMeshPath)?.GetComponent<SkinnedMeshRenderer>();
         var head = riderMesh?.bones.FirstOrDefault(bone => bone is { name: HeadBoneName });
 
-        return camera is null || playCamera is null || locomotion is null || riderMesh is null || head is null
+        return camera == null || playCamera == null || locomotion == null || riderMesh == null || head == null
             ? null
             : new RiderRig(camera, playCamera, bike.transform, locomotion, riderMesh, head);
     }
 
     public void SetRiderVisible(bool visible)
     {
-        foreach (var part in _riderParts)
-            part.SetActive(visible);
+        if (Array.Exists(_riderRenderers, renderer => renderer == null))
+            _riderRenderers = FindRiderRenderers(BikeTransform);
+
+        foreach (var renderer in _riderRenderers)
+            renderer.enabled = visible;
     }
 
-    private static IEnumerable<GameObject> FindHair(Transform bike) =>
-        bike.GetComponentsInChildren<Transform>(true)
-            .Where(child => HairNames.Any(child.name.Contains))
-            .Select(child => child.gameObject);
+    private static Renderer[] FindRiderRenderers(Transform bike) =>
+        bike.GetComponentsInChildren<MeshRenderer>(true).Select(renderer => (Renderer)renderer)
+            .Concat(bike.GetComponentsInChildren<SkinnedMeshRenderer>(true).Select(renderer => (Renderer)renderer))
+            .ToArray();
 }

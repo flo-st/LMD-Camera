@@ -1,16 +1,23 @@
 using LmdCamera.Config;
 using LmdCamera.Game;
-using UnityEngine;
 
 namespace LmdCamera.Core;
 
 internal sealed class CameraPositioner
 {
-    private const float MinLookDistanceSquared = 1e-6f;
-
     private readonly CameraSettings _settings;
+    private readonly FirstPersonFollower _firstPerson;
+    private readonly ThirdPersonFollower _thirdPerson;
 
-    public CameraPositioner(CameraSettings settings) => _settings = settings;
+    private ICameraFollower? _follower;
+    private bool _hideRider;
+
+    public CameraPositioner(CameraSettings settings)
+    {
+        _settings = settings;
+        _firstPerson = new FirstPersonFollower(settings.FirstPerson, settings.FirstPersonMotion);
+        _thirdPerson = new ThirdPersonFollower(settings.ThirdPerson, settings.ThirdPersonMotion);
+    }
 
     public void Apply(ViewMode view, RiderRig rig)
     {
@@ -18,50 +25,23 @@ internal sealed class CameraPositioner
         rig.Camera.fieldOfView = lens.FieldOfView;
         rig.Camera.nearClipPlane = lens.NearClipPlane;
         rig.PlayCamera.enabled = view == ViewMode.Default;
-        rig.SetRiderVisible(view != ViewMode.FirstPerson || !_settings.HideBike);
-    }
+        _hideRider = view == ViewMode.FirstPerson && _settings.HideRider;
+        rig.SetRiderVisible(!_hideRider);
 
-    public void Follow(ViewMode view, RiderRig rig)
-    {
-        switch (view)
+        _follower = view switch
         {
-            case ViewMode.FirstPerson:
-                FollowFirstPerson(rig, _settings.FirstPerson);
-                break;
+            ViewMode.FirstPerson => _firstPerson,
+            ViewMode.ThirdPerson => _thirdPerson,
+            _ => null,
+        };
 
-            case ViewMode.ThirdPerson:
-                FollowThirdPerson(rig, _settings.ThirdPerson);
-                break;
-        }
+        _follower?.Reset(rig);
     }
 
-    private static void FollowFirstPerson(RiderRig rig, CameraViewSettings view)
+    public void Follow(RiderRig rig)
     {
-        var camera = rig.CameraTransform;
-        var bikeRotation = rig.BikeTransform.rotation;
-        var targetRotation = bikeRotation * Quaternion.Euler(view.Pitch, 0f, 0f);
+        _follower?.Follow(rig);
 
-        camera.position = rig.Head.position + bikeRotation * new Vector3(0f, view.Height, view.Forward);
-        camera.rotation = Quaternion.Slerp(camera.rotation, targetRotation, FollowFactor(view.Smoothing));
+        if (_hideRider) rig.SetRiderVisible(false);
     }
-
-    private static void FollowThirdPerson(RiderRig rig, CameraViewSettings view)
-    {
-        var camera = rig.CameraTransform;
-        var bike = rig.BikeTransform;
-        var bikeRotation = bike.rotation;
-
-        var focus = bike.position + bikeRotation * new Vector3(0f, view.Height, 0f);
-        var targetPosition = focus + bikeRotation * new Vector3(0f, 0f, view.Forward);
-        var position = Vector3.Lerp(camera.position, targetPosition, FollowFactor(view.Smoothing));
-        camera.position = position;
-
-        var lookDirection = focus - position;
-        if (lookDirection.sqrMagnitude < MinLookDistanceSquared) return;
-
-        camera.rotation = Quaternion.LookRotation(lookDirection, Vector3.up) * Quaternion.Euler(view.Pitch, 0f, 0f);
-    }
-
-    private static float FollowFactor(float smoothing) =>
-        smoothing > 0f ? 1f - Mathf.Exp(-smoothing * Time.deltaTime) : 1f;
 }

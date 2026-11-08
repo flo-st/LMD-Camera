@@ -9,34 +9,37 @@ internal sealed class CameraController
 {
     private const float RigSearchIntervalSeconds = 0.5f;
     private const float RigSettleSeconds = 1f;
-    private const float FirstPersonStep = 0.05f;
-    private const float ThirdPersonStep = 0.1f;
-    private const float PitchStep = 2f;
+    private const double FirstPersonStep = 0.05;
+    private const double ThirdPersonStep = 0.1;
+    private const double PitchStep = 2;
 
     private readonly CameraSettings _settings;
     private readonly CameraPositioner _positioner;
     private readonly MelonLogger.Instance _log;
-    private readonly Interval _rigSearch = new(RigSearchIntervalSeconds);
     private readonly (KeyCode Key, Adjustment Change)[] _firstPersonAdjustments;
     private readonly (KeyCode Key, Adjustment Change)[] _thirdPersonAdjustments;
 
     private RiderRig? _rig;
     private ViewMode _view = ViewMode.None;
+    private float _nextRigSearchTime;
 
     public CameraController(CameraSettings settings, MelonLogger.Instance log)
     {
         _settings = settings;
         _positioner = new CameraPositioner(settings);
         _log = log;
-        _firstPersonAdjustments = settings.AdjustmentKeys.Bindings(FirstPersonStep, PitchStep);
-        _thirdPersonAdjustments = settings.AdjustmentKeys.Bindings(ThirdPersonStep, PitchStep);
+        _firstPersonAdjustments = settings.AdjustmentKeys.CreateBindings(FirstPersonStep, PitchStep);
+        _thirdPersonAdjustments = settings.AdjustmentKeys.CreateBindings(ThirdPersonStep, PitchStep);
     }
-
-    private bool IsCustomView => _view is ViewMode.FirstPerson or ViewMode.ThirdPerson;
 
     public void Update()
     {
-        if (_rigSearch.HasElapsed()) RefreshRig();
+        if (Time.unscaledTime >= _nextRigSearchTime)
+        {
+            _nextRigSearchTime = Time.unscaledTime + RigSearchIntervalSeconds;
+            RefreshRig();
+        }
+
         if (_view == ViewMode.None || _rig is not { IsAlive: true } rig) return;
 
         HandleViewKeys(rig);
@@ -45,8 +48,7 @@ internal sealed class CameraController
 
     public void LateUpdate()
     {
-        if (IsCustomView && _rig is { IsAlive: true } rig)
-            _positioner.Follow(_view, rig);
+        if (_rig is { IsAlive: true } rig) _positioner.Follow(rig);
     }
 
     private void RefreshRig()

@@ -14,7 +14,7 @@ internal sealed record ViewKeys(KeyCode FirstPerson, KeyCode Default, KeyCode Th
 
 internal sealed record AdjustmentKeys(KeyCode Up, KeyCode Down, KeyCode Left, KeyCode Right, KeyCode PitchUp, KeyCode PitchDown)
 {
-    public (KeyCode Key, Adjustment Change)[] Bindings(float positionStep, float pitchStep) => new[]
+    public (KeyCode Key, Adjustment Change)[] CreateBindings(double positionStep, double pitchStep) => new[]
     {
         (Up, new Adjustment(Height: positionStep)),
         (Down, new Adjustment(Height: -positionStep)),

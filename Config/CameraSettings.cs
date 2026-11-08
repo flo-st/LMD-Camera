@@ -14,7 +14,7 @@ internal sealed class CameraSettings
 
         _lastView = _category.CreateEntry("LastViewMode", ViewMode.Default);
         AllowAdjustments = Read("AllowKeyAdjustments", false);
-        HideBike = Read("FP_HideBike", false);
+        HideRider = Read("FP_HideRider", false);
 
         ViewKeys = new ViewKeys(
             FirstPerson: Read("Key_FirstPerson", KeyCode.Alpha1),
@@ -29,24 +29,36 @@ internal sealed class CameraSettings
             PitchUp: Read("Key_AdjustPitchUp", KeyCode.RightControl),
             PitchDown: Read("Key_AdjustPitchDown", KeyCode.RightShift));
 
-        DefaultLens = new Lens(Read("Default_FOV", 38f), Read("Default_NearClip", 0.3f));
+        DefaultLens = new Lens(ReadNumber("Default_FOV", 38), ReadNumber("Default_NearClip", 0.3));
 
-        FirstPerson = new CameraViewSettings(_category, "FP", "RotationSmoothing",
-            fieldOfView: 95f, nearClipPlane: 0.22f, forward: 0f, height: -0.2f, pitch: 25f, smoothing: 10f);
+        FirstPerson = new CameraViewSettings(_category, "FP",
+            fieldOfView: 95, nearClipPlane: 0.25, forward: 0.08, height: -0.1, pitch: 30);
 
-        ThirdPerson = new CameraViewSettings(_category, "TP", "PositionSmoothing",
-            fieldOfView: 70f, nearClipPlane: 0.3f, forward: -4f, height: 4f, pitch: 10f, smoothing: 7f);
+        FirstPersonMotion = new FirstPersonMotion(
+            RotationSmoothing: ReadNumber("FP_RotationSmoothing", 10),
+            HeadSmoothing: ReadNumber("FP_HeadSmoothing", 12),
+            Roll: ReadNumber("FP_Roll", 0.2));
+
+        ThirdPerson = new CameraViewSettings(_category, "TP",
+            fieldOfView: 70, nearClipPlane: 0.3, forward: -4.5, height: 3, pitch: 0);
+
+        ThirdPersonMotion = new ThirdPersonMotion(
+            HeadingSmoothing: ReadNumber("TP_HeadingSmoothing", 3),
+            VerticalSmoothing: ReadNumber("TP_VerticalSmoothing", 6),
+            LookHeight: ReadNumber("TP_LookHeight", 1));
 
         Save();
     }
 
     public bool AllowAdjustments { get; }
-    public bool HideBike { get; }
+    public bool HideRider { get; }
     public ViewKeys ViewKeys { get; }
     public AdjustmentKeys AdjustmentKeys { get; }
     public Lens DefaultLens { get; }
     public CameraViewSettings FirstPerson { get; }
     public CameraViewSettings ThirdPerson { get; }
+    public FirstPersonMotion FirstPersonMotion { get; }
+    public ThirdPersonMotion ThirdPersonMotion { get; }
 
     public ViewMode LastView
     {
@@ -68,4 +80,6 @@ internal sealed class CameraSettings
     public void Save() => _category.SaveToFile(false);
 
     private T Read<T>(string name, T defaultValue) => _category.CreateEntry(name, defaultValue).Value;
+
+    private float ReadNumber(string name, double defaultValue) => (float)Read(name, defaultValue);
 }

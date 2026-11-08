@@ -15,7 +15,7 @@ A camera mod for Lonely Mountains: Downhill that adds customizable first-person 
 
 1. Set up [MelonLoader](https://github.com/LavaGang/MelonLoader) for Lonely Mountains: Downhill
 
-> [!Note]
+> [!NOTE]
 >
 > If the installer fails, download the latest `MelonLoader.x64.zip` from the [MelonLoader releases](https://github.com/LavaGang/MelonLoader/releases) and extract it directly into the game directory.
 

@@ -3,7 +3,7 @@ namespace LmdCamera.Config;
 internal enum ViewMode
 {
     None = 0,
-    Default = 1,
-    ThirdPerson = 2,
-    FirstPerson = 3,
+    FirstPerson = 1,
+    Default = 2,
+    ThirdPerson = 3,
 }
