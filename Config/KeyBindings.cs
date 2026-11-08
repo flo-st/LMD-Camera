@@ -1,10 +1,10 @@
-﻿using UnityEngine;
+using UnityEngine;
 
-namespace LMD_Camera.Config;
+namespace LmdCamera.Config;
 
-internal record ViewKeys(KeyCode FirstPerson, KeyCode Default, KeyCode ThirdPerson)
+internal sealed record ViewKeys(KeyCode FirstPerson, KeyCode Default, KeyCode ThirdPerson)
 {
-    public (KeyCode Key, ViewMode View)[] Bindings { get; } = new[]
+    public (KeyCode Key, ViewMode View)[] Bindings { get; } =
     {
         (FirstPerson, ViewMode.FirstPerson),
         (Default, ViewMode.Default),
@@ -12,9 +12,9 @@ internal record ViewKeys(KeyCode FirstPerson, KeyCode Default, KeyCode ThirdPers
     };
 }
 
-internal record AdjustmentKeys(KeyCode Up, KeyCode Down, KeyCode Left, KeyCode Right, KeyCode PitchUp, KeyCode PitchDown)
+internal sealed record AdjustmentKeys(KeyCode Up, KeyCode Down, KeyCode Left, KeyCode Right, KeyCode PitchUp, KeyCode PitchDown)
 {
-    public (KeyCode Key, Adjustment Change)[] Bindings(float positionStep, float pitchStep) => new[]
+    public (KeyCode Key, Adjustment Change)[] CreateBindings(double positionStep, double pitchStep) => new[]
     {
         (Up, new Adjustment(Height: positionStep)),
         (Down, new Adjustment(Height: -positionStep)),

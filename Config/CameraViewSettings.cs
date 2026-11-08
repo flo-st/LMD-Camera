@@ -1,33 +1,25 @@
 using MelonLoader;
 
-namespace LMD_Camera.Config;
+namespace LmdCamera.Config;
 
-internal record Lens(float FieldOfView, float NearClipPlane);
-internal record Adjustment(float Forward = 0f, float Height = 0f, float Pitch = 0f);
-
-internal class CameraViewSettings
+internal sealed class CameraViewSettings
 {
-    private readonly MelonPreferences_Entry<float> _forward;
-    private readonly MelonPreferences_Entry<float> _height;
-    private readonly MelonPreferences_Entry<float> _pitch;
+    private readonly MelonPreferences_Entry<double> _forward;
+    private readonly MelonPreferences_Entry<double> _height;
+    private readonly MelonPreferences_Entry<double> _pitch;
 
     public CameraViewSettings(
         MelonPreferences_Category category,
         string prefix,
-        string smoothingName,
-        float fieldOfView,
-        float nearClipPlane,
-        float forward,
-        float height,
-        float pitch,
-        float smoothing)
+        double fieldOfView,
+        double nearClipPlane,
+        double forward,
+        double height,
+        double pitch)
     {
         Lens = new Lens(
-            category.CreateEntry($"{prefix}_FOV", fieldOfView).Value,
-            category.CreateEntry($"{prefix}_NearClip", nearClipPlane).Value
-        );
-
-        Smoothing = category.CreateEntry($"{prefix}_{smoothingName}", smoothing).Value;
+            (float)category.CreateEntry($"{prefix}_FOV", fieldOfView).Value,
+            (float)category.CreateEntry($"{prefix}_NearClip", nearClipPlane).Value);
 
         _forward = category.CreateEntry($"{prefix}_Forward", forward);
         _height = category.CreateEntry($"{prefix}_Height", height);
@@ -35,15 +27,16 @@ internal class CameraViewSettings
     }
 
     public Lens Lens { get; }
-    public float Smoothing { get; }
-    public float Forward => _forward.Value;
-    public float Height => _height.Value;
-    public float Pitch => _pitch.Value;
+    public float Forward => (float)_forward.Value;
+    public float Height => (float)_height.Value;
+    public float Pitch => (float)_pitch.Value;
 
     public void Adjust(Adjustment adjustment)
     {
-        _forward.Value += adjustment.Forward;
-        _height.Value += adjustment.Height;
-        _pitch.Value += adjustment.Pitch;
+        _forward.Value = Round(_forward.Value + adjustment.Forward);
+        _height.Value = Round(_height.Value + adjustment.Height);
+        _pitch.Value = Round(_pitch.Value + adjustment.Pitch);
     }
+
+    private static double Round(double value) => Math.Round(value, 2);
 }

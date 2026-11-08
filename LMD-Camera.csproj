@@ -1,30 +1,37 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace>LMD_Camera</RootNamespace>
+    <RootNamespace>LmdCamera</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <DebugType>none</DebugType>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
-    <GameDir Condition="'$(GameDir)' == '' And '$(LMD_GAME_DIR)' != ''">$(LMD_GAME_DIR)</GameDir>
-    <GameDir Condition="'$(GameDir)' == ''">..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill</GameDir>
-    <MelonDir Condition="'$(MelonDir)' == ''">$(GameDir)/MelonLoader</MelonDir>
+    <GameDir>..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill</GameDir>
+    <MelonDir>$(GameDir)\MelonLoader</MelonDir>
   </PropertyGroup>
 
+  <ItemDefinitionGroup>
+    <Reference>
+      <Private>false</Private>
+    </Reference>
+  </ItemDefinitionGroup>
+
   <ItemGroup>
-    <Reference Include="Assembly-CSharp"><HintPath>$(MelonDir)/Il2CppAssemblies/Assembly-CSharp.dll</HintPath></Reference>
-    <Reference Include="Il2Cppmscorlib"><HintPath>$(MelonDir)/Il2CppAssemblies/Il2Cppmscorlib.dll</HintPath></Reference>
-    <Reference Include="UnityEngine"><HintPath>$(MelonDir)/Il2CppAssemblies/UnityEngine.dll</HintPath></Reference>
-    <Reference Include="UnityEngine.CoreModule"><HintPath>$(MelonDir)/Il2CppAssemblies/UnityEngine.CoreModule.dll</HintPath></Reference>
-    <Reference Include="UnityEngine.InputLegacyModule"><HintPath>$(MelonDir)/Il2CppAssemblies/UnityEngine.InputLegacyModule.dll</HintPath></Reference>
-    <Reference Include="MelonLoader"><HintPath>$(MelonDir)/net6/MelonLoader.dll</HintPath></Reference>
-    <Reference Include="Il2CppInterop.Runtime"><HintPath>$(MelonDir)/net6/Il2CppInterop.Runtime.dll</HintPath></Reference>
+    <Reference Include="$(MelonDir)\net6\MelonLoader.dll" />
+    <Reference Include="$(MelonDir)\net6\Il2CppInterop.Runtime.dll" />
+    <Reference Include="$(MelonDir)\Il2CppAssemblies\Assembly-CSharp.dll" />
+    <Reference Include="$(MelonDir)\Il2CppAssemblies\Il2Cppmscorlib.dll" />
+    <Reference Include="$(MelonDir)\Il2CppAssemblies\UnityEngine.CoreModule.dll" />
+    <Reference Include="$(MelonDir)\Il2CppAssemblies\UnityEngine.InputLegacyModule.dll" />
   </ItemGroup>
-  
-  <Target Name="DeployMod" AfterTargets="Build" Condition="Exists('$(GameDir)/Mods')">
-    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(GameDir)/Mods" />
+
+  <Target Name="DeployMod" AfterTargets="Build" Condition="Exists('$(GameDir)\Mods')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\Mods" />
   </Target>
 
 </Project>
