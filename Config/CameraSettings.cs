@@ -25,8 +25,8 @@ internal sealed class CameraSettings
         AdjustmentKeys = new AdjustmentKeys(
             Up: Read("Key_AdjustUp", KeyCode.UpArrow),
             Down: Read("Key_AdjustDown", KeyCode.DownArrow),
-            Left: Read("Key_AdjustLeft", KeyCode.LeftArrow),
-            Right: Read("Key_AdjustRight", KeyCode.RightArrow),
+            Forward: Read("Key_AdjustForward", KeyCode.LeftArrow),
+            Back: Read("Key_AdjustBack", KeyCode.RightArrow),
             PitchUp: Read("Key_AdjustPitchUp", KeyCode.RightControl),
             PitchDown: Read("Key_AdjustPitchDown", KeyCode.RightShift));
 
