@@ -45,12 +45,12 @@ Camera mode is saved automatically and persists between sessions.
 
 When enabled, use the following keys while in First-Person or Third-Person mode:
 
-| Action                           | Key           |
-| -------------------------------- | ------------- |
-| Adjust vertical position         | `↑/↓ Arrow`   |
-| Adjust forward/backward position | `←/→ Arrow`   |
-| Tilt camera down                 | `Right Shift` |
-| Tilt camera up                   | `Right Ctrl`  |
+| Action                   | Key           |
+| ------------------------ | ------------- |
+| Move camera up/down      | `↑/↓ Arrow`   |
+| Move camera forward/back | `←/→ Arrow`   |
+| Tilt camera down         | `Right Shift` |
+| Tilt camera up           | `Right Ctrl`  |
 
 Adjustments are saved automatically and persist between sessions.
 
@@ -79,7 +79,7 @@ The built `.dll` is copied into the game's `Mods` folder automatically.
 > [!NOTE]
 >
 > Expected game location: `..\..\SteamLibrary\steamapps\common\Lonely Mountains - Downhill`\
-> Installed elsewhere? Change `GameDir` in `LMD-Camera.csproj` to your game folder.
+> Installed elsewhere? Build with `dotnet build -p:GameDir="<game folder path>"`
 
 ---
 

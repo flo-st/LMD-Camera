@@ -48,10 +48,10 @@ internal sealed class ThirdPersonFollower : ICameraFollower
         camera.rotation = Quaternion.LookRotation(lookDirection, Vector3.up) * Quaternion.Euler(_view.Pitch, 0f, 0f);
     }
 
+    // Handlebar axis stays level through flips
     private static bool TryGetHeading(Transform bike, out Vector3 heading)
     {
-        heading = bike.forward;
-        heading.y = 0f;
+        heading = Vector3.Cross(bike.right, Vector3.up);
 
         if (heading.sqrMagnitude < MinLengthSquared) return false;
 

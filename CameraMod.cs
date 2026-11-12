@@ -3,12 +3,12 @@ using LmdCamera.Config;
 using LmdCamera.Core;
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(CameraMod), "LMD-Camera", "1.2.0", "flo-st")]
+[assembly: MelonInfo(typeof(CameraMod), "LMD-Camera", "1.3.0", "flo-st")]
 [assembly: MelonGame("Megagon Industries", "Lonely Mountains: Downhill")]
 
 namespace LmdCamera;
 
-public class CameraMod : MelonMod
+public sealed class CameraMod : MelonMod
 {
     private CameraController? _controller;
 

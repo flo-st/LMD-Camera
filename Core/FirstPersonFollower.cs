@@ -8,6 +8,7 @@ internal sealed class FirstPersonFollower : ICameraFollower
 {
     private const float MaxNearClipBoost = 0.2f;
     private const float HiddenRagdollNearClip = 0.1f;
+    private const float FlipStartTilt = 60f;
 
     private readonly CameraViewSettings _view;
     private readonly FirstPersonMotion _motion;
@@ -52,14 +53,17 @@ internal sealed class FirstPersonFollower : ICameraFollower
         _headOffset = Vector3.Lerp(_headOffset, headOffset, Damping.Factor(_motion.HeadSmoothing));
         var cameraOffset = _headOffset + new Vector3(0f, _view.Height, _view.Forward);
 
-        var up = Vector3.Slerp(Vector3.up, bikeRotation * Vector3.up, _motion.Roll);
+        var bikeUp = bikeRotation * Vector3.up;
+        var flip = Mathf.InverseLerp(Mathf.Cos(FlipStartTilt * Mathf.Deg2Rad), -1f, bikeUp.y);
+        var roll = Mathf.Lerp(_motion.Roll, 1f, flip);
+        var up = Vector3.Slerp(Vector3.up, bikeUp, roll);
         var targetRotation = Quaternion.LookRotation(bikeRotation * Vector3.forward, up)
             * Quaternion.Euler(_view.Pitch, 0f, 0f);
 
         camera.position = bikePosition + bikeRotation * cameraOffset;
         camera.rotation = Quaternion.Slerp(camera.rotation, targetRotation, Damping.Factor(_motion.RotationSmoothing));
 
-        // Push near clip by distance that the smoothed camera trails the head
+        // Push near clip by distance that smoothed camera trails the head
         var lag = _headOffset - headOffset;
         var boost = Mathf.Min(new Vector2(lag.y, lag.z).magnitude, MaxNearClipBoost);
         rig.Camera.nearClipPlane = _view.Lens.NearClipPlane + boost;
