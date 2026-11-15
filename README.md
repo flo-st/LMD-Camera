@@ -18,9 +18,9 @@ Camera mod for Lonely Mountains: Downhill that adds first- and third-person view
 
 1. Set up [MelonLoader](https://github.com/LavaGang/MelonLoader) for Lonely Mountains: Downhill
 
-    > [!NOTE]
-    >
-    > If installer fails, download latest `MelonLoader.x64.zip` from [MelonLoader releases](https://github.com/LavaGang/MelonLoader/releases) and extract it into your game folder.
+> [!NOTE]
+>
+> If installer fails, download latest `MelonLoader.x64.zip` from [MelonLoader releases](https://github.com/LavaGang/MelonLoader/releases) and extract it into your game folder.
 
 2. Download latest release from [Releases](https://github.com/flo-st/LMD-Camera/releases)
 3. Place `.dll` in your game's `Mods` folder
