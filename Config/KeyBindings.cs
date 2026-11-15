@@ -12,7 +12,13 @@ internal sealed record ViewKeys(KeyCode FirstPerson, KeyCode Default, KeyCode Th
     };
 }
 
-internal sealed record AdjustmentKeys(KeyCode Up, KeyCode Down, KeyCode Forward, KeyCode Back, KeyCode PitchUp, KeyCode PitchDown)
+internal sealed record AdjustmentKeys(
+    KeyCode Up,
+    KeyCode Down,
+    KeyCode Forward,
+    KeyCode Back,
+    KeyCode PitchUp,
+    KeyCode PitchDown)
 {
     public (KeyCode Key, Adjustment Change)[] CreateBindings(double positionStep, double pitchStep) => new[]
     {

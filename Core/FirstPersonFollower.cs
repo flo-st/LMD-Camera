@@ -6,9 +6,10 @@ namespace LmdCamera.Core;
 
 internal sealed class FirstPersonFollower : ICameraFollower
 {
-    private const float MaxNearClipBoost = 0.2f;
-    private const float HiddenRagdollNearClip = 0.1f;
-    private const float FlipStartTilt = 60f;
+    private const float FlipStartTiltDegrees = 60f;
+    private const float MinLengthSquared = 1e-6f;
+    private const float FastSpinDegreesPerSecond = 100f;
+    private const float SpinSpeedSmoothing = 3f;
 
     private readonly CameraViewSettings _view;
     private readonly FirstPersonMotion _motion;
@@ -16,7 +17,11 @@ internal sealed class FirstPersonFollower : ICameraFollower
     private readonly bool _immersiveMode;
 
     private Vector3 _headOffset;
-    private Ragdoll? _ragdoll;
+    private Vector3 _bikeUp = Vector3.up;
+    private Vector3 _lastBikeUp = Vector3.up;
+    private float _spinSpeed;
+    private Quaternion _steadyRotation = Quaternion.identity;
+    private FirstPersonRider? _ragdoll;
     private Quaternion _cameraRotationInHead;
 
     public FirstPersonFollower(CameraSettings settings)
@@ -29,8 +34,12 @@ internal sealed class FirstPersonFollower : ICameraFollower
 
     public void Reset(RiderRig rig)
     {
-        var bike = rig.BikeTransform;
-        _headOffset = HeadOffset(rig, bike.position, bike.rotation);
+        Transform bike = rig.BikeTransform;
+        _headOffset = GetHeadOffset(rig, bike.position, bike.rotation);
+        _bikeUp = bike.up;
+        _lastBikeUp = bike.up;
+        _spinSpeed = 0f;
+        _steadyRotation = bike.rotation;
     }
 
     public void Follow(RiderRig rig)
@@ -39,60 +48,88 @@ internal sealed class FirstPersonFollower : ICameraFollower
 
         if (_ragdoll is not null)
         {
-            _ragdoll.SetVisible(true);
-            _ragdoll = null;
+            ReleaseRagdoll();
             Reset(rig);
         }
 
-        var camera = rig.CameraTransform;
-        var bike = rig.BikeTransform;
-        var bikePosition = bike.position;
-        var bikeRotation = bike.rotation;
+        Transform camera = rig.CameraTransform;
+        Transform bike = rig.BikeTransform;
+        Vector3 bikePosition = bike.position;
+        Quaternion bikeRotation = bike.rotation;
 
-        var headOffset = HeadOffset(rig, bikePosition, bikeRotation);
-        _headOffset = Vector3.Lerp(_headOffset, headOffset, Damping.Factor(_motion.HeadSmoothing));
-        var cameraOffset = _headOffset + new Vector3(0f, _view.Height, _view.Forward);
+        Vector3 headOffset = GetHeadOffset(rig, bikePosition, bikeRotation);
+        _headOffset = Vector3.Lerp(_headOffset, headOffset, Smoothing.GetFactor(_motion.HeadSmoothing));
+        Vector3 cameraOffset = _headOffset + new Vector3(0f, _view.Height, _view.Forward);
 
-        var bikeUp = bikeRotation * Vector3.up;
-        var flip = Mathf.InverseLerp(Mathf.Cos(FlipStartTilt * Mathf.Deg2Rad), -1f, bikeUp.y);
-        var roll = Mathf.Lerp(_motion.Roll, 1f, flip);
-        var up = Vector3.Slerp(Vector3.up, bikeUp, roll);
-        var targetRotation = Quaternion.LookRotation(bikeRotation * Vector3.forward, up)
+        Vector3 bikeUp = bikeRotation * Vector3.up;
+        float catchUp = GetFlipCatchUp(bikeUp);
+        _bikeUp = Vector3.Slerp(_bikeUp, bikeUp, Smoothing.GetFactor(_motion.TiltSmoothing * catchUp));
+        var forward = Vector3.Cross(bikeRotation * Vector3.right, _bikeUp);
+        if (forward.sqrMagnitude >= MinLengthSquared) _steadyRotation = Quaternion.LookRotation(forward, _bikeUp);
+
+        float flip = Mathf.InverseLerp(Mathf.Cos(FlipStartTiltDegrees * Mathf.Deg2Rad), -1f, _bikeUp.y);
+        float roll = Mathf.Lerp(_motion.Roll, 1f, flip);
+        var up = Vector3.Slerp(Vector3.up, _bikeUp, roll);
+        Quaternion targetRotation = Quaternion.LookRotation(_steadyRotation * Vector3.forward, up)
             * Quaternion.Euler(_view.Pitch, 0f, 0f);
 
         camera.position = bikePosition + bikeRotation * cameraOffset;
-        camera.rotation = Quaternion.Slerp(camera.rotation, targetRotation, Damping.Factor(_motion.RotationSmoothing));
+        camera.rotation = Quaternion.Slerp(camera.rotation, targetRotation,
+            Smoothing.GetFactor(_motion.RotationSmoothing * catchUp));
+    }
 
-        // Push near clip by distance that smoothed camera trails the head
-        var lag = _headOffset - headOffset;
-        var boost = Mathf.Min(new Vector2(lag.y, lag.z).magnitude, MaxNearClipBoost);
-        rig.Camera.nearClipPlane = _view.Lens.NearClipPlane + boost;
+    public void ReleaseRagdoll()
+    {
+        _ragdoll?.Destroy();
+        _ragdoll = null;
+    }
+
+    private float GetFlipCatchUp(Vector3 bikeUp)
+    {
+        if (Time.deltaTime > 0f)
+        {
+            float spinSpeed = Vector3.Angle(_lastBikeUp, bikeUp) / Time.deltaTime;
+            _spinSpeed = Mathf.Lerp(_spinSpeed, spinSpeed, Smoothing.GetFactor(SpinSpeedSmoothing));
+        }
+
+        _lastBikeUp = bikeUp;
+        float fastSpin = Mathf.Max(0f, _spinSpeed - FastSpinDegreesPerSecond) / FastSpinDegreesPerSecond;
+        return 1f + _motion.FlipCatchUp * fastSpin;
     }
 
     private bool TryFollowRagdoll(RiderRig rig)
     {
-        var camera = rig.CameraTransform;
+        Transform camera = rig.CameraTransform;
 
         if (_ragdoll is null)
         {
-            _ragdoll = RiderRig.FindRagdoll();
+            _ragdoll = rig.FindRagdoll();
             if (_ragdoll is null) return false;
 
             _cameraRotationInHead = Quaternion.Inverse(rig.Head.rotation) * camera.rotation;
+            _ragdoll.SetHidden(_hideRider, true);
+            _ragdoll.BeforeCameraRender = () => PlaceOnHead(rig);
         }
 
-        if (!_ragdoll.IsAlive) return false;
+        if (_ragdoll.Head == null) return false;
 
-        if (_hideRider) _ragdoll.SetVisible(false);
+        _ragdoll.Update();
 
-        var head = _ragdoll.Head;
+        Transform head = _ragdoll.Head;
         camera.rotation = Quaternion.Slerp(camera.rotation, head.rotation * _cameraRotationInHead,
-            Damping.Factor(_motion.RotationSmoothing));
-        camera.position = head.position + camera.rotation * new Vector3(0f, _view.Height, _view.Forward);
-        rig.Camera.nearClipPlane = _hideRider ? HiddenRagdollNearClip : _view.Lens.NearClipPlane;
+            Smoothing.GetFactor(_motion.RotationSmoothing));
+        PlaceOnHead(rig);
         return true;
     }
 
-    private static Vector3 HeadOffset(RiderRig rig, Vector3 bikePosition, Quaternion bikeRotation) =>
+    private void PlaceOnHead(RiderRig rig)
+    {
+        if (_ragdoll is null || _ragdoll.Head == null) return;
+
+        Transform camera = rig.CameraTransform;
+        camera.position = _ragdoll.Head.position + camera.rotation * new Vector3(0f, _view.Height, _view.Forward);
+    }
+
+    private static Vector3 GetHeadOffset(RiderRig rig, Vector3 bikePosition, Quaternion bikeRotation) =>
         Quaternion.Inverse(bikeRotation) * (rig.Head.position - bikePosition);
 }
