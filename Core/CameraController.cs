@@ -14,20 +14,24 @@ internal sealed class CameraController
     private const double PitchStep = 2;
 
     private readonly CameraSettings _settings;
-    private readonly CameraPositioner _positioner;
     private readonly MelonLogger.Instance _log;
+    private readonly FirstPersonFollower _firstPerson;
+    private readonly ThirdPersonFollower _thirdPerson;
     private readonly (KeyCode Key, Adjustment Change)[] _firstPersonAdjustments;
     private readonly (KeyCode Key, Adjustment Change)[] _thirdPersonAdjustments;
 
     private RiderRig? _rig;
-    private ViewMode _view = ViewMode.None;
+    private ICameraFollower? _follower;
+    private ViewMode? _view;
+    private Lens? _gameLens;
     private float _nextRigSearchTime;
 
     public CameraController(CameraSettings settings, MelonLogger.Instance log)
     {
         _settings = settings;
-        _positioner = new CameraPositioner(settings);
         _log = log;
+        _firstPerson = new FirstPersonFollower(settings);
+        _thirdPerson = new ThirdPersonFollower(settings);
         _firstPersonAdjustments = settings.AdjustmentKeys.CreateBindings(FirstPersonStep, PitchStep);
         _thirdPersonAdjustments = settings.AdjustmentKeys.CreateBindings(ThirdPersonStep, PitchStep);
     }
@@ -40,7 +44,7 @@ internal sealed class CameraController
             RefreshRig();
         }
 
-        if (_view == ViewMode.None || _rig is not { IsAlive: true } rig) return;
+        if (_view is null || _rig is not { IsAlive: true } rig) return;
 
         HandleViewKeys(rig);
         if (_settings.AllowAdjustments) HandleAdjustmentKeys();
@@ -48,27 +52,44 @@ internal sealed class CameraController
 
     public void LateUpdate()
     {
-        if (_rig is { IsAlive: true } rig) _positioner.Follow(rig);
+        if (_rig is not { } rig) return;
+
+        if (!rig.IsAlive)
+        {
+            ReleaseRig(rig);
+            return;
+        }
+
+        rig.SetRagdollSmoothed(_view is ViewMode.FirstPerson or ViewMode.ThirdPerson);
+        _follower?.Follow(rig);
+        rig.UpdateFirstPersonRider();
     }
 
     private void RefreshRig()
     {
-        if (_rig is { IsAlive: false })
-        {
-            _rig = null;
-            _view = ViewMode.None;
-        }
-
         _rig ??= RiderRig.Find();
+        if (_view is not null || _rig is not { AgeSeconds: >= RigSettleSeconds } rig) return;
 
-        if (_view == ViewMode.None && _rig is { Age: >= RigSettleSeconds } rig)
-            ApplyView(_settings.LastView, rig);
+        if (rig.PlayCamera.enabled) _gameLens = new Lens(rig.Camera.fieldOfView, rig.Camera.nearClipPlane);
+
+        ApplyView(_settings.LastView, rig);
+    }
+
+    private void ReleaseRig(RiderRig rig)
+    {
+        _firstPerson.ReleaseRagdoll();
+        rig.SetRagdollSmoothed(false);
+        rig.DestroyFirstPersonRider();
+        if (_gameLens is { } gameLens) rig.RestoreGameCamera(gameLens);
+
+        _rig = null;
+        _follower = null;
+        _view = null;
     }
 
     private void HandleViewKeys(RiderRig rig)
     {
-        var requestedView = ReadRequestedView();
-        if (requestedView == ViewMode.None || requestedView == _view) return;
+        if (ReadRequestedView() is not { } view || view == _view) return;
 
         if (rig.IsRagdolling)
         {
@@ -76,18 +97,18 @@ internal sealed class CameraController
             return;
         }
 
-        ApplyView(requestedView, rig);
-        _settings.LastView = requestedView;
+        ApplyView(view, rig);
+        _settings.LastView = view;
     }
 
-    private ViewMode ReadRequestedView()
+    private ViewMode? ReadRequestedView()
     {
-        foreach (var (key, view) in _settings.ViewKeys.Bindings)
+        foreach ((KeyCode key, ViewMode view) in _settings.ViewKeys.Bindings)
         {
             if (Input.GetKeyDown(key)) return view;
         }
 
-        return ViewMode.None;
+        return null;
     }
 
     private void HandleAdjustmentKeys()
@@ -108,7 +129,7 @@ internal sealed class CameraController
     {
         var changed = false;
 
-        foreach (var (key, change) in bindings)
+        foreach ((KeyCode key, Adjustment change) in bindings)
         {
             if (!Input.GetKeyDown(key)) continue;
 
@@ -121,7 +142,30 @@ internal sealed class CameraController
 
     private void ApplyView(ViewMode view, RiderRig rig)
     {
-        _positioner.Apply(view, rig);
+        if (_gameLens is not { } gameLens) return;
+
+        Lens lens = view switch
+        {
+            ViewMode.FirstPerson => _settings.FirstPerson.Lens,
+            ViewMode.ThirdPerson => _settings.ThirdPerson.Lens,
+            _ => gameLens,
+        };
+        rig.Camera.fieldOfView = lens.FieldOfView;
+        rig.Camera.nearClipPlane = lens.NearClipPlane;
+        rig.PlayCamera.enabled = view == ViewMode.Default;
+
+        bool isFirstPerson = view == ViewMode.FirstPerson;
+        rig.SetHidden(isFirstPerson && _settings.HideRider, isFirstPerson);
+        _firstPerson.ReleaseRagdoll();
+
+        _follower = view switch
+        {
+            ViewMode.FirstPerson => _firstPerson,
+            ViewMode.ThirdPerson => _thirdPerson,
+            _ => null,
+        };
+
+        _follower?.Reset(rig);
         _view = view;
         _log.Msg($"View: {view}");
     }

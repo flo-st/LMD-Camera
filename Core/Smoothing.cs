@@ -2,8 +2,8 @@ using UnityEngine;
 
 namespace LmdCamera.Core;
 
-internal static class Damping
+internal static class Smoothing
 {
-    public static float Factor(float rate) =>
+    public static float GetFactor(float rate) =>
         rate > 0f ? 1f - Mathf.Exp(-rate * Time.deltaTime) : 1f;
 }

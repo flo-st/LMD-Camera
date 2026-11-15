@@ -28,6 +28,7 @@
     <Reference Include="$(MelonDir)\Il2CppAssemblies\Il2Cppmscorlib.dll" />
     <Reference Include="$(MelonDir)\Il2CppAssemblies\UnityEngine.CoreModule.dll" />
     <Reference Include="$(MelonDir)\Il2CppAssemblies\UnityEngine.InputLegacyModule.dll" />
+    <Reference Include="$(MelonDir)\Il2CppAssemblies\UnityEngine.PhysicsModule.dll" />
   </ItemGroup>
 
   <Target Name="DeployMod" AfterTargets="Build" Condition="Exists('$(GameDir)\Mods')">

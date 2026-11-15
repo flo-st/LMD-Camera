@@ -5,12 +5,16 @@ namespace LmdCamera.Config;
 
 internal sealed class CameraSettings
 {
+    private const string FilePath = "UserData/LMD-Camera.cfg";
+
     private readonly MelonPreferences_Category _category = MelonPreferences.CreateCategory("LMD-Camera");
+    private readonly MelonPreferences_Category _keys = MelonPreferences.CreateCategory("LMD-Camera-Keys");
     private readonly MelonPreferences_Entry<ViewMode> _lastView;
 
     public CameraSettings()
     {
-        _category.SetFilePath("UserData/LMD-Camera.cfg");
+        _category.SetFilePath(FilePath);
+        _keys.SetFilePath(FilePath);
 
         _lastView = _category.CreateEntry("LastViewMode", ViewMode.Default);
         AllowAdjustments = Read("AllowKeyAdjustments", false);
@@ -18,37 +22,37 @@ internal sealed class CameraSettings
         ImmersiveMode = Read("FP_ImmersiveMode", false);
 
         ViewKeys = new ViewKeys(
-            FirstPerson: Read("Key_FirstPerson", KeyCode.Alpha1),
-            Default: Read("Key_Default", KeyCode.Alpha2),
-            ThirdPerson: Read("Key_ThirdPerson", KeyCode.Alpha3));
+            FirstPerson: ReadKey("FirstPerson", KeyCode.Alpha1),
+            Default: ReadKey("Default", KeyCode.Alpha2),
+            ThirdPerson: ReadKey("ThirdPerson", KeyCode.Alpha3));
 
         AdjustmentKeys = new AdjustmentKeys(
-            Up: Read("Key_AdjustUp", KeyCode.UpArrow),
-            Down: Read("Key_AdjustDown", KeyCode.DownArrow),
-            Forward: Read("Key_AdjustForward", KeyCode.LeftArrow),
-            Back: Read("Key_AdjustBack", KeyCode.RightArrow),
-            PitchUp: Read("Key_AdjustPitchUp", KeyCode.RightControl),
-            PitchDown: Read("Key_AdjustPitchDown", KeyCode.RightShift));
-
-        DefaultLens = new Lens(ReadNumber("Default_FOV", 38), ReadNumber("Default_NearClip", 0.3));
+            Up: ReadKey("AdjustUp", KeyCode.UpArrow),
+            Down: ReadKey("AdjustDown", KeyCode.DownArrow),
+            Forward: ReadKey("AdjustForward", KeyCode.LeftArrow),
+            Back: ReadKey("AdjustBack", KeyCode.RightArrow),
+            PitchUp: ReadKey("AdjustPitchUp", KeyCode.RightControl),
+            PitchDown: ReadKey("AdjustPitchDown", KeyCode.RightShift));
 
         FirstPerson = new CameraViewSettings(_category, "FP",
-            fieldOfView: 95, nearClipPlane: 0.25, forward: 0.08, height: -0.1, pitch: 30);
+            fieldOfView: 90, nearClipPlane: 0.05, forward: 0.08, height: -0.1, pitch: 30);
 
         FirstPersonMotion = new FirstPersonMotion(
             RotationSmoothing: ReadNumber("FP_RotationSmoothing", 10),
             HeadSmoothing: ReadNumber("FP_HeadSmoothing", 12),
-            Roll: ReadNumber("FP_Roll", 0.2));
+            TiltSmoothing: ReadNumber("FP_TiltSmoothing", 10),
+            Roll: ReadNumber("FP_Roll", 0.2),
+            FlipCatchUp: ReadNumber("FP_FlipCatchUp", 1.5));
 
         ThirdPerson = new CameraViewSettings(_category, "TP",
-            fieldOfView: 70, nearClipPlane: 0.3, forward: -4.5, height: 3, pitch: 0);
+            fieldOfView: 80, nearClipPlane: 0.3, forward: -3.3, height: 4.3, pitch: -16);
 
         ThirdPersonMotion = new ThirdPersonMotion(
             HeadingSmoothing: ReadNumber("TP_HeadingSmoothing", 3),
-            VerticalSmoothing: ReadNumber("TP_VerticalSmoothing", 6),
-            LookHeight: ReadNumber("TP_LookHeight", 1));
+            VerticalSmoothing: ReadNumber("TP_VerticalSmoothing", 6));
 
-        Save();
+        _category.SaveToFile(false);
+        _keys.SaveToFile(false);
     }
 
     public bool AllowAdjustments { get; }
@@ -56,7 +60,6 @@ internal sealed class CameraSettings
     public bool ImmersiveMode { get; }
     public ViewKeys ViewKeys { get; }
     public AdjustmentKeys AdjustmentKeys { get; }
-    public Lens DefaultLens { get; }
     public CameraViewSettings FirstPerson { get; }
     public CameraViewSettings ThirdPerson { get; }
     public FirstPersonMotion FirstPersonMotion { get; }
@@ -64,7 +67,7 @@ internal sealed class CameraSettings
 
     public ViewMode LastView
     {
-        get => _lastView.Value is ViewMode.None ? ViewMode.Default : _lastView.Value;
+        get => _lastView.Value;
         set
         {
             _lastView.Value = value;
@@ -72,16 +75,11 @@ internal sealed class CameraSettings
         }
     }
 
-    public Lens GetLens(ViewMode view) => view switch
-    {
-        ViewMode.FirstPerson => FirstPerson.Lens,
-        ViewMode.ThirdPerson => ThirdPerson.Lens,
-        _ => DefaultLens,
-    };
-
     public void Save() => _category.SaveToFile(false);
+
+    private KeyCode ReadKey(string name, KeyCode defaultValue) => _keys.CreateEntry(name, defaultValue).Value;
 
     private T Read<T>(string name, T defaultValue) => _category.CreateEntry(name, defaultValue).Value;
 
-    private float ReadNumber(string name, double defaultValue) => (float)Read(name, defaultValue);
+    private float ReadNumber(string name, double defaultValue) => (float) Read(name, defaultValue);
 }

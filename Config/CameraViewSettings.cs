@@ -18,8 +18,8 @@ internal sealed class CameraViewSettings
         double pitch)
     {
         Lens = new Lens(
-            (float)category.CreateEntry($"{prefix}_FOV", fieldOfView).Value,
-            (float)category.CreateEntry($"{prefix}_NearClip", nearClipPlane).Value);
+            (float) category.CreateEntry($"{prefix}_FOV", fieldOfView).Value,
+            (float) category.CreateEntry($"{prefix}_NearClip", nearClipPlane).Value);
 
         _forward = category.CreateEntry($"{prefix}_Forward", forward);
         _height = category.CreateEntry($"{prefix}_Height", height);
@@ -27,9 +27,9 @@ internal sealed class CameraViewSettings
     }
 
     public Lens Lens { get; }
-    public float Forward => (float)_forward.Value;
-    public float Height => (float)_height.Value;
-    public float Pitch => (float)_pitch.Value;
+    public float Forward => (float) _forward.Value;
+    public float Height => (float) _height.Value;
+    public float Pitch => (float) _pitch.Value;
 
     public void Adjust(Adjustment adjustment)
     {
