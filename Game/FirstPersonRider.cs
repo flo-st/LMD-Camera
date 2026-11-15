@@ -84,7 +84,7 @@ internal sealed class FirstPersonRider
 
     public void Update()
     {
-        if (!_isHeadHidden) return;
+        if (!_isHeadHidden || _isRiderHidden) return;
 
         foreach ((Transform point, Transform anchor) in _collapsePoints)
         {

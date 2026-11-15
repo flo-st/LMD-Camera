@@ -9,16 +9,14 @@ internal sealed class CameraController
 {
     private const float RigSearchIntervalSeconds = 0.5f;
     private const float RigSettleSeconds = 1f;
-    private const double FirstPersonStep = 0.05;
-    private const double ThirdPersonStep = 0.1;
-    private const double PitchStep = 2;
+    private const double FirstPersonStepMeters = 0.05;
+    private const double ThirdPersonStepMeters = 0.1;
+    private const double PitchStepDegrees = 2;
 
     private readonly CameraSettings _settings;
     private readonly MelonLogger.Instance _log;
     private readonly FirstPersonFollower _firstPerson;
     private readonly ThirdPersonFollower _thirdPerson;
-    private readonly (KeyCode Key, Adjustment Change)[] _firstPersonAdjustments;
-    private readonly (KeyCode Key, Adjustment Change)[] _thirdPersonAdjustments;
 
     private RiderRig? _rig;
     private ICameraFollower? _follower;
@@ -32,21 +30,17 @@ internal sealed class CameraController
         _log = log;
         _firstPerson = new FirstPersonFollower(settings);
         _thirdPerson = new ThirdPersonFollower(settings);
-        _firstPersonAdjustments = settings.AdjustmentKeys.CreateBindings(FirstPersonStep, PitchStep);
-        _thirdPersonAdjustments = settings.AdjustmentKeys.CreateBindings(ThirdPersonStep, PitchStep);
     }
 
     public void Update()
     {
-        if (Time.unscaledTime >= _nextRigSearchTime)
+        if (_view is null)
         {
-            _nextRigSearchTime = Time.unscaledTime + RigSearchIntervalSeconds;
             RefreshRig();
+            return;
         }
 
-        if (_view is null || _rig is not { IsAlive: true } rig) return;
-
-        HandleViewKeys(rig);
+        HandleViewKeys();
         if (_settings.AllowAdjustments) HandleAdjustmentKeys();
     }
 
@@ -67,10 +61,13 @@ internal sealed class CameraController
 
     private void RefreshRig()
     {
-        _rig ??= RiderRig.Find();
-        if (_view is not null || _rig is not { AgeSeconds: >= RigSettleSeconds } rig) return;
+        if (Time.unscaledTime < _nextRigSearchTime) return;
 
-        if (rig.PlayCamera.enabled) _gameLens = new Lens(rig.Camera.fieldOfView, rig.Camera.nearClipPlane);
+        _nextRigSearchTime = Time.unscaledTime + RigSearchIntervalSeconds;
+        _rig ??= RiderRig.Find();
+        if (_rig is not { AgeSeconds: >= RigSettleSeconds } rig) return;
+
+        if (rig.TryGetGameLens(out Lens gameLens)) _gameLens = gameLens;
 
         ApplyView(_settings.LastView, rig);
     }
@@ -78,18 +75,16 @@ internal sealed class CameraController
     private void ReleaseRig(RiderRig rig)
     {
         _firstPerson.ReleaseRagdoll();
-        rig.SetRagdollSmoothed(false);
-        rig.DestroyFirstPersonRider();
-        if (_gameLens is { } gameLens) rig.RestoreGameCamera(gameLens);
+        rig.Release(_gameLens);
 
         _rig = null;
         _follower = null;
         _view = null;
     }
 
-    private void HandleViewKeys(RiderRig rig)
+    private void HandleViewKeys()
     {
-        if (ReadRequestedView() is not { } view || view == _view) return;
+        if (ReadRequestedView() is not { } view || view == _view || _rig is not { IsAlive: true } rig) return;
 
         if (rig.IsRagdolling)
         {
@@ -103,10 +98,10 @@ internal sealed class CameraController
 
     private ViewMode? ReadRequestedView()
     {
-        foreach ((KeyCode key, ViewMode view) in _settings.ViewKeys.Bindings)
-        {
-            if (Input.GetKeyDown(key)) return view;
-        }
+        ViewKeys keys = _settings.ViewKeys;
+        if (Input.GetKeyDown(keys.FirstPerson)) return ViewMode.FirstPerson;
+        if (Input.GetKeyDown(keys.Default)) return ViewMode.Default;
+        if (Input.GetKeyDown(keys.ThirdPerson)) return ViewMode.ThirdPerson;
 
         return null;
     }
@@ -116,48 +111,32 @@ internal sealed class CameraController
         switch (_view)
         {
             case ViewMode.FirstPerson:
-                Adjust(_settings.FirstPerson, _firstPersonAdjustments);
+                AdjustView(_settings.FirstPerson, FirstPersonStepMeters);
                 break;
 
             case ViewMode.ThirdPerson:
-                Adjust(_settings.ThirdPerson, _thirdPersonAdjustments);
+                AdjustView(_settings.ThirdPerson, ThirdPersonStepMeters);
                 break;
         }
     }
 
-    private void Adjust(CameraViewSettings view, (KeyCode Key, Adjustment Change)[] bindings)
+    private void AdjustView(CameraViewSettings view, double stepMeters)
     {
-        var changed = false;
+        AdjustmentKeys keys = _settings.AdjustmentKeys;
+        int forward = ReadDirection(keys.Forward, keys.Back);
+        int height = ReadDirection(keys.Up, keys.Down);
+        int pitch = ReadDirection(keys.PitchDown, keys.PitchUp);
+        if (forward == 0 && height == 0 && pitch == 0) return;
 
-        foreach ((KeyCode key, Adjustment change) in bindings)
-        {
-            if (!Input.GetKeyDown(key)) continue;
-
-            view.Adjust(change);
-            changed = true;
-        }
-
-        if (changed) _settings.Save();
+        view.Adjust(forward * stepMeters, height * stepMeters, pitch * PitchStepDegrees);
+        _settings.Save();
     }
 
     private void ApplyView(ViewMode view, RiderRig rig)
     {
         if (_gameLens is not { } gameLens) return;
 
-        Lens lens = view switch
-        {
-            ViewMode.FirstPerson => _settings.FirstPerson.Lens,
-            ViewMode.ThirdPerson => _settings.ThirdPerson.Lens,
-            _ => gameLens,
-        };
-        rig.Camera.fieldOfView = lens.FieldOfView;
-        rig.Camera.nearClipPlane = lens.NearClipPlane;
-        rig.PlayCamera.enabled = view == ViewMode.Default;
-
-        bool isFirstPerson = view == ViewMode.FirstPerson;
-        rig.SetHidden(isFirstPerson && _settings.HideRider, isFirstPerson);
         _firstPerson.ReleaseRagdoll();
-
         _follower = view switch
         {
             ViewMode.FirstPerson => _firstPerson,
@@ -165,8 +144,22 @@ internal sealed class CameraController
             _ => null,
         };
 
+        Lens lens = view switch
+        {
+            ViewMode.FirstPerson => _settings.FirstPerson.Lens,
+            ViewMode.ThirdPerson => _settings.ThirdPerson.Lens,
+            _ => gameLens,
+        };
+        rig.SetLens(lens, isGameControlled: _follower is null);
+
+        bool isFirstPerson = view == ViewMode.FirstPerson;
+        rig.SetHidden(isFirstPerson && _settings.IsRiderHidden, isFirstPerson);
+
         _follower?.Reset(rig);
         _view = view;
         _log.Msg($"View: {view}");
     }
+
+    private static int ReadDirection(KeyCode positiveKey, KeyCode negativeKey) =>
+        (Input.GetKeyDown(positiveKey) ? 1 : 0) - (Input.GetKeyDown(negativeKey) ? 1 : 0);
 }

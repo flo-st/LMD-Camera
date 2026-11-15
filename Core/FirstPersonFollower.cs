@@ -13,8 +13,8 @@ internal sealed class FirstPersonFollower : ICameraFollower
 
     private readonly CameraViewSettings _view;
     private readonly FirstPersonMotion _motion;
-    private readonly bool _hideRider;
-    private readonly bool _immersiveMode;
+    private readonly bool _isRiderHidden;
+    private readonly bool _isImmersiveMode;
 
     private Vector3 _headOffset;
     private Vector3 _bikeUp = Vector3.up;
@@ -28,8 +28,8 @@ internal sealed class FirstPersonFollower : ICameraFollower
     {
         _view = settings.FirstPerson;
         _motion = settings.FirstPersonMotion;
-        _hideRider = settings.HideRider;
-        _immersiveMode = settings.ImmersiveMode;
+        _isRiderHidden = settings.IsRiderHidden;
+        _isImmersiveMode = settings.IsImmersiveMode;
     }
 
     public void Reset(RiderRig rig)
@@ -44,7 +44,7 @@ internal sealed class FirstPersonFollower : ICameraFollower
 
     public void Follow(RiderRig rig)
     {
-        if (_immersiveMode && rig.IsRagdolling && TryFollowRagdoll(rig)) return;
+        if (_isImmersiveMode && rig.IsRagdolling && TryFollowRagdoll(rig)) return;
 
         if (_ragdoll is not null)
         {
@@ -107,7 +107,7 @@ internal sealed class FirstPersonFollower : ICameraFollower
             if (_ragdoll is null) return false;
 
             _cameraRotationInHead = Quaternion.Inverse(rig.Head.rotation) * camera.rotation;
-            _ragdoll.SetHidden(_hideRider, true);
+            _ragdoll.SetHidden(_isRiderHidden, true);
             _ragdoll.BeforeCameraRender = () => PlaceOnHead(rig);
         }
 

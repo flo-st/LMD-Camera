@@ -31,11 +31,11 @@ internal sealed class CameraViewSettings
     public float Height => (float) _height.Value;
     public float Pitch => (float) _pitch.Value;
 
-    public void Adjust(Adjustment adjustment)
+    public void Adjust(double forward, double height, double pitch)
     {
-        _forward.Value = Round(_forward.Value + adjustment.Forward);
-        _height.Value = Round(_height.Value + adjustment.Height);
-        _pitch.Value = Round(_pitch.Value + adjustment.Pitch);
+        _forward.Value = Round(_forward.Value + forward);
+        _height.Value = Round(_height.Value + height);
+        _pitch.Value = Round(_pitch.Value + pitch);
     }
 
     private static double Round(double value) => Math.Round(value, 2);

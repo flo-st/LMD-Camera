@@ -14,6 +14,8 @@ internal sealed class RiderRig
     private const string HeadBoneName = "head_tip_BindJNT";
     private const string CenterBoneName = "cog_BindJNT";
 
+    private readonly Camera _camera;
+    private readonly PlayCamera _playCamera;
     private readonly GameObject _cameraObject;
     private readonly BikeLocomotion _locomotion;
     private readonly Transform _centerBone;
@@ -34,9 +36,9 @@ internal sealed class RiderRig
         Transform head,
         Transform centerBone)
     {
-        Camera = camera;
+        _camera = camera;
         CameraTransform = camera.transform;
-        PlayCamera = playCamera;
+        _playCamera = playCamera;
         BikeTransform = bike;
         Head = head;
         _cameraObject = camera.gameObject;
@@ -46,9 +48,7 @@ internal sealed class RiderRig
         riderMesh.updateWhenOffscreen = true;
     }
 
-    public Camera Camera { get; }
     public Transform CameraTransform { get; }
-    public PlayCamera PlayCamera { get; }
     public Transform BikeTransform { get; }
     public Transform Head { get; }
 
@@ -85,19 +85,19 @@ internal sealed class RiderRig
         if (ragdoll == null) return null;
 
         Transform? head = FindBone(FindRiderMesh(ragdoll.transform), HeadBoneName);
-        return head == null ? null : new FirstPersonRider(ragdoll.transform, head, Camera);
+        return head == null ? null : new FirstPersonRider(ragdoll.transform, head, _camera);
     }
 
     public void SetHidden(bool isRiderHidden, bool isHeadHidden)
     {
-        if (isRiderHidden || isHeadHidden) _firstPersonRider ??= new FirstPersonRider(BikeTransform, Head, Camera);
+        if (isRiderHidden || isHeadHidden) _firstPersonRider ??= new FirstPersonRider(BikeTransform, Head, _camera);
 
         _firstPersonRider?.SetHidden(isRiderHidden, isHeadHidden);
     }
 
-    public void SetRagdollSmoothed(bool smoothed)
+    public void SetRagdollSmoothed(bool isSmoothed)
     {
-        GameObject? ragdoll = smoothed ? FindRagdollObject() : null;
+        GameObject? ragdoll = isSmoothed ? FindRagdollObject() : null;
         if (ragdoll != null && ragdoll == _smoothedRagdoll) return;
 
         foreach ((Rigidbody body, RigidbodyInterpolation interpolation) in _ragdollBodies)
@@ -118,15 +118,26 @@ internal sealed class RiderRig
 
     public void UpdateFirstPersonRider() => _firstPersonRider?.Update();
 
-    public void DestroyFirstPersonRider() => _firstPersonRider?.Destroy();
-
-    public void RestoreGameCamera(Lens gameLens)
+    public bool TryGetGameLens(out Lens gameLens)
     {
-        if (Camera == null || PlayCamera == null) return;
+        gameLens = new Lens(_camera.fieldOfView, _camera.nearClipPlane);
+        return _playCamera.enabled;
+    }
 
-        Camera.fieldOfView = gameLens.FieldOfView;
-        Camera.nearClipPlane = gameLens.NearClipPlane;
-        PlayCamera.enabled = true;
+    public void SetLens(Lens lens, bool isGameControlled)
+    {
+        if (_camera == null || _playCamera == null) return;
+
+        _camera.fieldOfView = lens.FieldOfView;
+        _camera.nearClipPlane = lens.NearClipPlane;
+        _playCamera.enabled = isGameControlled;
+    }
+
+    public void Release(Lens? gameLens)
+    {
+        SetRagdollSmoothed(false);
+        _firstPersonRider?.Destroy();
+        if (gameLens is { } lens) SetLens(lens, isGameControlled: true);
     }
 
     private GameObject? FindRagdollObject()

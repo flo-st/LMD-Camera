@@ -18,8 +18,8 @@ internal sealed class CameraSettings
 
         _lastView = _category.CreateEntry("LastViewMode", ViewMode.Default);
         AllowAdjustments = Read("AllowKeyAdjustments", false);
-        HideRider = Read("FP_HideRider", false);
-        ImmersiveMode = Read("FP_ImmersiveMode", false);
+        IsRiderHidden = Read("FP_HideRider", false);
+        IsImmersiveMode = Read("FP_ImmersiveMode", false);
 
         ViewKeys = new ViewKeys(
             FirstPerson: ReadKey("FirstPerson", KeyCode.Alpha1),
@@ -56,8 +56,8 @@ internal sealed class CameraSettings
     }
 
     public bool AllowAdjustments { get; }
-    public bool HideRider { get; }
-    public bool ImmersiveMode { get; }
+    public bool IsRiderHidden { get; }
+    public bool IsImmersiveMode { get; }
     public ViewKeys ViewKeys { get; }
     public AdjustmentKeys AdjustmentKeys { get; }
     public CameraViewSettings FirstPerson { get; }

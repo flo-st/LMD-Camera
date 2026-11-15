@@ -1,8 +1,18 @@
+using UnityEngine;
+
 namespace LmdCamera.Config;
 
 internal readonly record struct Lens(float FieldOfView, float NearClipPlane);
 
-internal readonly record struct Adjustment(double Forward = 0, double Height = 0, double Pitch = 0);
+internal sealed record ViewKeys(KeyCode FirstPerson, KeyCode Default, KeyCode ThirdPerson);
+
+internal sealed record AdjustmentKeys(
+    KeyCode Up,
+    KeyCode Down,
+    KeyCode Forward,
+    KeyCode Back,
+    KeyCode PitchUp,
+    KeyCode PitchDown);
 
 internal readonly record struct FirstPersonMotion(
     float RotationSmoothing,
