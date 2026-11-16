@@ -8,7 +8,7 @@ Camera mod for Lonely Mountains: Downhill that adds first- and third-person view
 - Third-person view
 - Customizable settings
 
-*Optional, enable in config:*
+_Optional, enable in config:_
 
 - Immersive ragdoll mode
 - Hide rider
@@ -30,11 +30,11 @@ Camera mod for Lonely Mountains: Downhill that adds first- and third-person view
 
 ### Switching Camera Modes
 
-| Action                              | Default Key |
-| ----------------------------------- | ----------- |
-| First-Person View                   | `1`         |
-| Default View (original camera)      | `2`         |
-| Third-Person View                   | `3`         |
+| Action                         | Default Key |
+| ------------------------------ | ----------- |
+| First-Person View              | `1`         |
+| Default View (original camera) | `2`         |
+| Third-Person View              | `3`         |
 
 Last used view is restored on next launch. Switching is disabled during crashes.
 
@@ -58,9 +58,8 @@ Adjustments are saved automatically.
 ## Configuration
 
 - Settings are in `UserData/LMD-Camera.cfg` and apply after restart
-- `FP_` settings are for first person, `TP_` for third person
 - Higher smoothing values follow faster, `0` disables smoothing completely
-- Hotkeys are set in `[LMD-Camera-Keys]` and use Unity [KeyCode](https://docs.unity3d.com/ScriptReference/KeyCode.html) names
+- Hotkeys use Unity [KeyCode](https://docs.unity3d.com/ScriptReference/KeyCode.html) names
 
 ## Building
 

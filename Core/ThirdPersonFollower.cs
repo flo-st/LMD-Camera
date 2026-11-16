@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace LmdCamera.Core;
 
-internal sealed class ThirdPersonFollower : ICameraFollower
+internal sealed class ThirdPersonFollower : CameraFollower
 {
     private const float MinLengthSquared = 1e-6f;
     private const float LookHeightMeters = 1f;
@@ -13,30 +13,29 @@ internal sealed class ThirdPersonFollower : ICameraFollower
     private const float SpinCenterSmoothing = 1f;
     private const float RagdollSwitchSmoothing = 4f;
 
-    private readonly CameraViewSettings _view;
-    private readonly ThirdPersonMotion _motion;
+    private readonly CameraSettings _settings;
 
     private Vector3 _heading = Vector3.forward;
-    private float _focusHeight;
     private Vector3 _spinCenter;
+    private float _focusHeight;
     private float _ragdollBlend;
 
-    public ThirdPersonFollower(CameraSettings settings)
+    public ThirdPersonFollower(CameraSettings settings) : base(settings.ThirdPerson)
     {
-        _view = settings.ThirdPerson;
-        _motion = settings.ThirdPersonMotion;
+        _settings = settings;
     }
 
-    public void Reset(RiderRig rig)
+    public override void Reset(RiderRig rig)
     {
         Transform bike = rig.BikeTransform;
         if (TryGetHeading(bike, out Vector3 heading)) _heading = heading;
-        _focusHeight = bike.position.y;
+
         _spinCenter = bike.InverseTransformPoint(rig.RiderCenter);
+        _focusHeight = bike.position.y;
         _ragdollBlend = rig.IsRagdolling ? 1f : 0f;
     }
 
-    public void Follow(RiderRig rig)
+    public override void Follow(RiderRig rig, float deltaTime)
     {
         Transform camera = rig.CameraTransform;
         Transform bike = rig.BikeTransform;
@@ -44,47 +43,37 @@ internal sealed class ThirdPersonFollower : ICameraFollower
 
         if (!isRagdolling && TryGetHeading(bike, out Vector3 heading))
         {
-            _heading = Vector3.Slerp(_heading, heading, Smoothing.GetFactor(_motion.HeadingSmoothing));
+            float headingFactor = GetSmoothingFactor(_settings.ThirdPersonHeadingSmoothing, deltaTime);
+            _heading = Vector3.Slerp(_heading, heading, headingFactor);
         }
 
-        float ragdoll = isRagdolling ? 1f : 0f;
-        _ragdollBlend = Mathf.Lerp(_ragdollBlend, ragdoll, Smoothing.GetFactor(RagdollSwitchSmoothing));
-        var target = Vector3.Lerp(GetSpinCenter(rig, bike, isRagdolling), bike.position, _ragdollBlend);
-
-        UpdateFocusHeight(target.y);
-        var focus = new Vector3(target.x, _focusHeight, target.z);
-
-        Vector3 position = focus + Vector3.up * _view.Height + _heading * _view.Forward;
-        Vector3 lookDirection = focus + Vector3.up * LookHeightMeters - position;
-        camera.position = position;
-
-        if (lookDirection.sqrMagnitude < MinLengthSquared) return;
-
-        camera.rotation = Quaternion.LookRotation(lookDirection, Vector3.up) * Quaternion.Euler(_view.Pitch, 0f, 0f);
-    }
-
-    private void UpdateFocusHeight(float targetHeight)
-    {
-        float lag = (targetHeight - _focusHeight) / SoftVerticalLagMeters;
-        float verticalSmoothing = _motion.VerticalSmoothing * (1f + lag * lag);
-        _focusHeight = Mathf.Lerp(_focusHeight, targetHeight, Smoothing.GetFactor(verticalSmoothing));
-    }
-
-    private Vector3 GetSpinCenter(RiderRig rig, Transform bike, bool isRagdolling)
-    {
         if (!isRagdolling && bike.up.y > UprightMinUp)
         {
             Vector3 riderCenter = bike.InverseTransformPoint(rig.RiderCenter);
-            _spinCenter = Vector3.Lerp(_spinCenter, riderCenter, Smoothing.GetFactor(SpinCenterSmoothing));
+            _spinCenter = Vector3.Lerp(_spinCenter, riderCenter, GetSmoothingFactor(SpinCenterSmoothing, deltaTime));
         }
 
-        return bike.TransformPoint(_spinCenter) - Vector3.up * _spinCenter.y;
+        Vector3 spinCenter = bike.TransformPoint(_spinCenter) - Vector3.up * _spinCenter.y;
+        float ragdollFactor = GetSmoothingFactor(RagdollSwitchSmoothing, deltaTime);
+        _ragdollBlend = Mathf.Lerp(_ragdollBlend, isRagdolling ? 1f : 0f, ragdollFactor);
+        var target = Vector3.Lerp(spinCenter, bike.position, _ragdollBlend);
+
+        float lag = (target.y - _focusHeight) / SoftVerticalLagMeters;
+        float verticalSmoothing = _settings.ThirdPersonVerticalSmoothing * (1f + lag * lag);
+        _focusHeight = Mathf.Lerp(_focusHeight, target.y, GetSmoothingFactor(verticalSmoothing, deltaTime));
+
+        Vector3 offset = Vector3.up * View.Height + _heading * View.Forward;
+        Vector3 lookDirection = Vector3.up * LookHeightMeters - offset;
+        camera.position = new Vector3(target.x, _focusHeight, target.z) + offset;
+
+        if (lookDirection.sqrMagnitude < MinLengthSquared) return;
+
+        camera.rotation = Quaternion.LookRotation(lookDirection, Vector3.up) * Quaternion.Euler(View.Pitch, 0f, 0f);
     }
 
     private static bool TryGetHeading(Transform bike, out Vector3 heading)
     {
         heading = Vector3.Cross(bike.right, Vector3.up);
-
         if (heading.sqrMagnitude < MinLengthSquared) return false;
 
         heading.Normalize();
